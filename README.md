@@ -1,35 +1,45 @@
-# .
+# 识别-前端
 
-This template should help get you started developing with Vue 3 in Vite.
+## 项目介绍
 
-## Recommended IDE Setup
+## 环境配置
+### 环境要求 (Prerequisites)
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+在开始之前，请确保您的开发环境中已安装以下软件。本项目配置已在 **Node.js v18.x** 环境下验证通过，请务必使用兼容的版本。
 
-## Customize configuration
+  - **Node.js**: **v18.x** (长期支持版 LTS)。
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+      - **检查版本**: 在终端运行 `node -v`
+      - **下载地址**: [https://nodejs.org/](https://nodejs.org/)
 
-## Project Setup
+### 初始化 (Initialization Steps)
 
-```sh
-npm install
+请严格按照以下步骤操作，以确保环境的一致性。
+
+1. 获取项目代码
+
+```bash
+git clone git@github.com:xiangluanliang/recognition-client.git
 ```
 
-### Compile and Hot-Reload for Development
+2. 安装项目依赖
 
-```sh
+在项目根目录打开终端，运行以下命令。npm 将会根据 `package.json` 文件下载所有指定的库。
+
+```bash
+npm install
+npm install element-plus axios #单独安装element组件库
+npm install --save-dev vite-plugin-vue-devtools #单独安装Vite插件
+```
+
+3. 运行项目 (Running the Project)
+
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+云服务器架设前，需要本地后端运行 (`python manage.py runserver`)。
 
-```sh
-npm run build
-```
+打开浏览器并访问终端中提示的[地址](http://localhost:5173)。
 
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+如果一切顺利，您将看到“项目初始化成功”的页面，并收到一条来自后端的成功消息提示。至此，您的开发环境已搭建完毕。
