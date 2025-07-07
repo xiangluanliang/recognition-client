@@ -6,8 +6,8 @@ pipeline {
     }
 
     environment {
-        DEPLOY_PATH_PROD = "/var/www/frontend-prod"
-        DEPLOY_PATH_TEST = "/var/www/frontend-test"
+        DEPLOY_PATH_PROD = "/var/www/recognition-client/prod"
+        DEPLOY_PATH_TEST = "/var/www/recognition-client/test"
         VITE_API_URL_PROD = "http://127.0.0.1:8000/api" // 替换为后端正式IP和端口
         VITE_API_URL_TEST = "http://127.0.0.1:8088/api" // 替换为后端测试IP和端口
     }
