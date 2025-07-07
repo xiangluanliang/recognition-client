@@ -12,3 +12,7 @@ export const login = (data) => {
         }]
     });
 };
+
+export const doubleNum = (data) => {
+    return apiClient.post('/double-num/', data);
+};
