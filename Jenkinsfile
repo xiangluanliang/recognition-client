@@ -30,7 +30,7 @@ pipeline {
             steps {
                 echo "为分支 ${env.BRANCH_NAME} 进行打包"
                 nodejs(nodeJSInstallationName: 'NodeJS 18') {
-                    sh "npm run build -- --base=/${env.BRANCH_NAME}/"
+                sh "VITE_BASE=/${env.BRANCH_NAME}/ npm run build"
                 }
             }
         }
