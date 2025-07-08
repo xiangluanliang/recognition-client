@@ -1,11 +1,12 @@
 # 识别-前端
 
 ## 项目介绍
+待完成
 
 ## 环境配置
 ### 环境要求 (Prerequisites)
 
-在开始之前，请确保您的开发环境中已安装以下软件。本项目配置已在 **Node.js v18.x** 环境下验证通过，请务必使用兼容的版本。
+在开始之前，请确保你的开发环境中已安装以下软件。本项目配置已在 **Node.js v18.x** 环境下验证通过，请务必使用兼容的版本。
 
   - **Node.js**: **v18.x** (长期支持版 LTS)。
 
@@ -36,10 +37,31 @@ npm install --save-dev vite-plugin-vue-devtools #单独安装Vite插件
 
 ```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-云服务器架设前，需要本地后端运行 (`python manage.py runserver`)。
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-打开浏览器并访问终端中提示的[地址](http://localhost:5173)。
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-如果一切顺利，您将看到“项目初始化成功”的页面，并收到一条来自后端的成功消息提示。至此，您的开发环境已搭建完毕。
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
