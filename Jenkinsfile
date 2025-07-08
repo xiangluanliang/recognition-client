@@ -17,7 +17,11 @@ pipeline {
             steps {
                 echo '执行 npm install'
                 nodejs(nodeJSInstallationName: 'NodeJS 18') {
-                    sh 'npm config set registry https://registry.npmmirror.com && npm install'
+                    sh '''
+                        npm config set registry https://registry.npmmirror.com
+                        rm -rf node_modules package-lock.json
+                        npm install --legacy-peer-deps
+                    '''
                 }
             }
         }
