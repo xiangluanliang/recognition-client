@@ -17,7 +17,7 @@ pipeline {
             steps {
                 echo '执行 npm install'
                 nodejs(nodeJSInstallationName: 'NodeJS 18') {
-                    sh 'npm install'
+                    sh 'npm config set registry https://registry.npmmirror.com && npm install'
                 }
             }
         }
