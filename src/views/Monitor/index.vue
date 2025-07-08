@@ -212,12 +212,12 @@ const getDetectionType = (level: string) => {
 }
 
 // 查看检测详情
-const viewDetectionDetail = (detection: any) => {
+const viewDetectionDetail = (_detection: any) => {
   ElMessage.info('查看检测详情功能开发中...')
 }
 
 // 生成告警
-const createAlarm = (detection: any) => {
+const createAlarm = (_detection: any) => {
   ElMessage.success('告警已生成')
 }
 

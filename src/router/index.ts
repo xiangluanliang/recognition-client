@@ -59,7 +59,7 @@ const router = createRouter({
 })
 
 // 简化路由守卫，暂时跳过登录验证
-router.beforeEach((to, from, next) => {
+router.beforeEach((_to, _from, next) => {
   // 暂时注释掉登录验证逻辑
   // const userStore = useUserStore()
   // if (to.meta.requiresAuth && !userStore.isLoggedIn) {

@@ -19,7 +19,7 @@ export const useAlarmStore = defineStore("alarm", () => {
   const loading = ref<boolean>(false)
 
   // 模拟获取告警列表
-  const fetchAlarmList = async (params?: any) => {
+  const fetchAlarmList = async (_params?: any) => {
     loading.value = true
     try {
       // 模拟API调用
