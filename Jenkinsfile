@@ -1,7 +1,6 @@
 pipeline {
     agent any
 
-    // 定义一个环境变量，用来存放部署的根目录
     environment {
         DEPLOY_PATH = '/var/www/recognition-client'
     }
