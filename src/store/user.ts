@@ -21,7 +21,7 @@ export const useUserStore = defineStore("user", () => {
   const isLoggedIn = ref<boolean>(true) // 默认已登录状态
 
   // 简化的登录方法
-  const loginAction = async (loginForm: any) => {
+  const loginAction = async (_loginForm: any) => {
     token.value = "mock-token"
     isLoggedIn.value = true
     return { success: true }
