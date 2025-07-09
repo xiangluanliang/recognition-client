@@ -6,7 +6,7 @@
         <el-button-group>
           <el-button :type="viewMode === 'grid' ? 'primary' : 'default'" @click="viewMode = 'grid'">
             <el-icon><Grid /></el-icon>
-            网格视图
+            网格视图1
           </el-button>
           <el-button :type="viewMode === 'single' ? 'primary' : 'default'" @click="viewMode = 'single'">
             <el-icon><Monitor /></el-icon>
