@@ -11,31 +11,39 @@ interface UserInfo {
 }
 
 export const useUserStore = defineStore("user", () => {
-  const token = ref<string>("")
+  const token = ref<string>("a166fff2de4dea199779a23a0c27aa466017364e")
   const userInfo = ref<UserInfo>({
     id: 1,
     username: "管理员",
     email: "admin@example.com",
     role: "admin",
   })
-  const isLoggedIn = ref<boolean>(true) // 默认已登录状态
+  const isLoggedIn = ref<boolean>(false)  // 默认未登录
 
-  // 简化的登录方法
+  // 模拟登录的方法
   const loginAction = async (_loginForm: any) => {
-    token.value = "mock-token"
+    // 模拟从后端获取 Token
+    // 如果你有一个后端接口，通常会在这里做 API 请求
+    token.value = "ee0fa6bbb779010c0d9c56a853016b138ff18601"  // 模拟 Token
     isLoggedIn.value = true
+    userInfo.value = {
+      id: 1,
+      username: "testuser",
+      email: "testuser@example.com",
+      role: "admin",
+    }
     return { success: true }
   }
 
-  // 简化的登出方法
+  // 登出方法
   const logoutAction = async () => {
-    token.value = ""
-    isLoggedIn.value = false
+    token.value = ""  // 清空 Token
+    isLoggedIn.value = false  // 设置为未登录
   }
 
-  // 初始化用户
+  // 初始化用户信息
   const initUser = async () => {
-    // 暂时不做任何操作
+    // 你可以在这里做其他初始化操作，如果需要的话
   }
 
   return {

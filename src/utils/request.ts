@@ -7,20 +7,22 @@ const request = axios.create({
   timeout: 10000,
 })
 
-const userStore = useUserStore()
+
 
 // 请求拦截器
 request.interceptors.request.use(
   (config) => {
-    if (userStore.token) {
-      config.headers.Authorization = `Bearer ${userStore.token}`
+      const userStore = useUserStore()
+      if (userStore.token) {
+      config.headers.Authorization = `Token ${userStore.token}`
+    } else {
+      console.warn("token 为空，没加 Authorization")
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  },
+  (error) => Promise.reject(error)
 )
+
 
 // 响应拦截器
 request.interceptors.response.use(
@@ -29,6 +31,7 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
+      const userStore = useUserStore()
       userStore.logoutAction()
       ElMessage.error("登录已过期，请重新登录")
     } else {
@@ -39,3 +42,4 @@ request.interceptors.response.use(
 )
 
 export default request
+

@@ -1,21 +1,19 @@
 import request from "@/utils/request"
 
-export const getAlarmList = (params?: any) => {
-  return request.get("/alarms/", { params })
+import type { AlarmLog } from '@/types/alarm'
+
+export const getAlarmList = (params?: any): Promise<AlarmLog[]> => {
+  return request.get('/alarm_logs/', { params })
 }
 
 export const getAlarmDetail = (id: number) => {
-  return request.get(`/alarms/${id}/`)
+  return request.get(`/alarm_logs/${id}/`)
 }
 
 export const updateAlarmStatus = (id: number, status: string) => {
-  return request.patch(`/alarms/${id}/`, { status })
+  return request.patch(`/alarm_logs/${id}/`, { status })
 }
 
 export const deleteAlarm = (id: number) => {
-  return request.delete(`/alarms/${id}/`)
-}
-
-export const getAlarmStats = () => {
-  return request.get("/alarms/stats/")
+  return request.delete(`/alarm_logs/${id}/`)
 }
