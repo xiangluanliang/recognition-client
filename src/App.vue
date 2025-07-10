@@ -8,7 +8,6 @@ import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
 
-// 暂时移除用户初始化逻辑
 onMounted(() => {
   // 初始化用户信息
   userStore.initUser()

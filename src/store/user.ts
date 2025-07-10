@@ -1,49 +1,71 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
+import request from '@/utils/request'
 
-// 简化的用户信息接口
 interface UserInfo {
   id: number
   username: string
   email: string
-  avatar?: string
-  role: string
+  status: number
+  created_at: string
 }
 
 export const useUserStore = defineStore("user", () => {
-  const token = ref<string>("a166fff2de4dea199779a23a0c27aa466017364e")
-  const userInfo = ref<UserInfo>({
-    id: 1,
-    username: "管理员",
-    email: "admin@example.com",
-    role: "admin",
-  })
-  const isLoggedIn = ref<boolean>(false)  // 默认未登录
+  const token = ref<string>("")
+  const userInfo = ref<UserInfo | null>(null)
+  const isLoggedIn = ref(false)
 
-  // 模拟登录的方法
-  const loginAction = async (_loginForm: any) => {
-    // 模拟从后端获取 Token
-    // 如果你有一个后端接口，通常会在这里做 API 请求
-    token.value = "ee0fa6bbb779010c0d9c56a853016b138ff18601"  // 模拟 Token
+  const loginAction = async (loginForm: { username: string; password: string }) => {
+  try {
+    const res = await request.post('/login/', loginForm)
+    // 这里直接用res，因为response拦截器已经返回res.data了,
+    // 不要管这个报错，不要改
+    const data = res.data
+    token.value = data.token
+    userInfo.value = data.user
     isLoggedIn.value = true
-    userInfo.value = {
-      id: 1,
-      username: "testuser",
-      email: "testuser@example.com",
-      role: "admin",
-    }
+
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('userInfo', JSON.stringify(data.user))
     return { success: true }
+  } catch (error: any) {
+    const rawMessage =
+      error.response?.data?.non_field_errors?.[0] ||
+      error.response?.data?.detail ||
+      error.response?.data?.message
+    let message = rawMessage
+
+    if (
+      rawMessage === '无法使用提供的凭据登录。' ||
+      rawMessage === 'Unable to log in with provided credentials.'
+    ) {
+      message = '用户不存在，请先注册'
+    }
+
+    return { success: false, message: message || '登录失败' }
+  }
+}
+
+
+
+  const logoutAction = () => {
+    token.value = ""
+    userInfo.value = null
+    isLoggedIn.value = false
+
+    localStorage.removeItem('token')
+    localStorage.removeItem('userInfo')
   }
 
-  // 登出方法
-  const logoutAction = async () => {
-    token.value = ""  // 清空 Token
-    isLoggedIn.value = false  // 设置为未登录
-  }
+  const initUser = () => {
+    const localToken = localStorage.getItem('token')
+    const localUser = localStorage.getItem('userInfo')
 
-  // 初始化用户信息
-  const initUser = async () => {
-    // 你可以在这里做其他初始化操作，如果需要的话
+    if (localToken && localUser) {
+      token.value = localToken
+      userInfo.value = JSON.parse(localUser)
+      isLoggedIn.value = true
+    }
   }
 
   return {

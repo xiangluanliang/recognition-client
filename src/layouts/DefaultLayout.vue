@@ -55,7 +55,7 @@
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                 <el-dropdown-item command="settings">系统设置</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
+              </el-dropdown-menu>h
             </template>
           </el-dropdown>
         </div>
@@ -72,6 +72,7 @@
 import { useUserStore } from '@/store/user'
 import { useAlarmStore } from '@/store/alarm'
 import { ElMessage } from 'element-plus'
+import router from "@/router";
 
 const userStore = useUserStore()
 const alarmStore = useAlarmStore()
@@ -81,6 +82,7 @@ const handleCommand = (command: string) => {
     case 'logout':
       userStore.logoutAction()
       ElMessage.success('退出登录成功')
+      router.push('/login')
       break
     case 'profile':
       ElMessage.info('个人中心功能开发中...')

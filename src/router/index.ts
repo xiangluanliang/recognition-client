@@ -1,3 +1,4 @@
+import { useUserStore } from '@/store/user'
 import { createRouter, createWebHistory } from "vue-router"
 import DefaultLayout from "@/layouts/DefaultLayout.vue"
 
@@ -58,20 +59,20 @@ const router = createRouter({
   routes,
 })
 
-// 简化路由守卫，暂时跳过登录验证
-router.beforeEach((_to, _from, next) => {
-  // 暂时注释掉登录验证逻辑
-  // const userStore = useUserStore()
-  // if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-  //   next("/login")
-  // } else if (to.path === "/login" && userStore.isLoggedIn) {
-  //   next("/")
-  // } else {
-  //   next()
-  // }
-
-  // 直接放行所有路由
-  next()
+router.beforeEach((to, _from, next) => {
+  const userStore = useUserStore()
+  const publicPages = ['/login', '/register']
+  console.log('Navigating to:', to.path, 'isLoggedIn:', userStore.isLoggedIn)
+  if (publicPages.includes(to.path)) {
+    return next()
+  }
+  if (!userStore.isLoggedIn) {
+    return next('/login')
+  }
+  if (to.path === '/login') {
+    return next('/')
+  }
+  return next()
 })
 
 export default router
