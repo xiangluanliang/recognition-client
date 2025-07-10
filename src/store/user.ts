@@ -8,6 +8,7 @@ interface UserInfo {
   email: string
   status: number
   created_at: string
+  role_id:number
 }
 
 export const useUserStore = defineStore("user", () => {
@@ -20,13 +21,12 @@ export const useUserStore = defineStore("user", () => {
     const res = await request.post('/login/', loginForm)
     // 这里直接用res，因为response拦截器已经返回res.data了,
     // 不要管这个报错，不要改
-    const data = res.data
-    token.value = data.token
-    userInfo.value = data.user
+    token.value = res.token
+    userInfo.value = res.user
     isLoggedIn.value = true
 
-    localStorage.setItem('token', data.token)
-    localStorage.setItem('userInfo', JSON.stringify(data.user))
+    localStorage.setItem('token', res.token)
+    localStorage.setItem('userInfo', JSON.stringify(res.user))
     return { success: true }
   } catch (error: any) {
     const rawMessage =
@@ -68,6 +68,29 @@ export const useUserStore = defineStore("user", () => {
     }
   }
 
+  const registerAction = async (registerForm: {
+  username: string
+  password: string
+  email: string
+}) => {
+  try {
+    const res = await request.post('/register/', registerForm)
+    return { success: true, message: res.message || '注册成功！' }
+  } catch (error: any) {
+    const errors = error.response?.data
+    let message = '注册失败'
+    if (errors?.username?.[0]) {
+      message = `用户名错误：${errors.username[0]}`
+    } else if (errors?.email?.[0]) {
+      message = `邮箱错误：${errors.email[0]}`
+    } else if (errors?.password?.[0]) {
+      message = `密码错误：${errors.password[0]}`
+    }
+    return { success: false, message }
+  }
+}
+
+
   return {
     token,
     userInfo,
@@ -75,5 +98,6 @@ export const useUserStore = defineStore("user", () => {
     loginAction,
     logoutAction,
     initUser,
+    registerAction
   }
 })

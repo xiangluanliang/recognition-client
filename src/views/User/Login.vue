@@ -47,6 +47,14 @@
             <el-form-item prop="password">
               <el-input v-model="registerForm.password" type="password" placeholder="请输入密码" size="large" prefix-icon="Lock" show-password />
             </el-form-item>
+
+            <el-form-item prop="role_id">
+              <el-select v-model="registerForm.role_id" placeholder="请选择身份类型" size="large">
+                <el-option label="普通用户" :value="1" />
+                <el-option label="管理员" :value="2" />
+              </el-select>
+            </el-form-item>
+
             <el-form-item>
               <el-button type="success" size="large" :loading="loading" class="login-button" @click="handleRegister">
                 {{ loading ? '注册中...' : '注册' }}
@@ -58,6 +66,7 @@
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
@@ -81,9 +90,11 @@ const loginForm = reactive({
 })
 const registerForm = reactive({
   username: '',
+  email: '',
   password: '',
-  email: ''
+  role_id: 1 // 默认普通用户
 })
+
 
 const loginRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -123,13 +134,13 @@ const handleLogin = async () => {
     }
   })
 }
-
 const handleRegister = async () => {
   if (!registerFormRef.value) return
-  await registerFormRef.value.validate(async (valid) => {
+  await registerFormRef.value.validate(async valid => {
     if (valid) {
       loading.value = true
       try {
+        // 这里直接用 axios 或你自己的 request 工具，记得接口地址
         await request.post('/register/', registerForm)
         ElMessage.success('注册成功，请登录')
         activeTab.value = 'login'
