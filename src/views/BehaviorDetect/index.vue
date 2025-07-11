@@ -231,11 +231,6 @@ video {
   font-size: 14px;
 }
 
-/* 表格选中行样式 */
-:deep(.selected-row) {
-  background-color: #ecf5ff !important;
-}
-
 :deep(.selected-row:hover > td) {
   background-color: #ecf5ff !important;
 }
