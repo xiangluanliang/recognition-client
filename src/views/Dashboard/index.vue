@@ -118,12 +118,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import {onMounted, ref} from 'vue'
+import {use} from 'echarts/core'
+import {CanvasRenderer} from 'echarts/renderers'
+import {LineChart, PieChart} from 'echarts/charts'
+import {GridComponent, LegendComponent, TooltipComponent} from 'echarts/components'
 import VChart from 'vue-echarts'
+import {getAlarmTrend, getTodayAlarmCount} from "@/api/alarm.ts";
+import {Bell, CircleCheck, User, VideoCamera} from "@element-plus/icons-vue";
 
 use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
@@ -164,29 +166,20 @@ const recentAlarms = ref([
 ])
 
 // 告警趋势图表配置
-const alarmTrendOption = ref({
-  title: {
-    text: '近7天告警趋势'
-  },
-  tooltip: {
-    trigger: 'axis'
-  },
-  xAxis: {
-    type: 'category',
-    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-  },
-  yAxis: {
-    type: 'value'
-  },
-  series: [{
-    data: [12, 8, 15, 20, 18, 25, 23],
-    type: 'line',
-    smooth: true,
-    itemStyle: {
-      color: '#409EFF'
-    }
-  }]
+const alarmTrendOption = ref<{
+  title: { text: string },
+  tooltip: object,
+  xAxis: { type: string, data: string[] },
+  yAxis: { type: string },
+  series: { data: number[], type: string, smooth: boolean, itemStyle: { color: string } }[]
+}>({
+  title: { text: '近7天告警趋势' },
+  tooltip: { trigger: 'axis' },
+  xAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] },
+  yAxis: { type: 'value' },
+  series: [{ data: [], type: 'line', smooth: true, itemStyle: { color: '#409EFF' } }]
 })
+
 
 // 区域分布图表配置
 const areaDistributionOption = ref({
@@ -249,8 +242,18 @@ const getStatusText = (status: string) => {
   return texts[status] || '未知'
 }
 
-onMounted(() => {
-  // 初始化数据
+const updateTrendData = (trendData: number[]) => {
+  alarmTrendOption.value.series[0].data = trendData
+}
+
+onMounted(async () => {
+  try {
+    // const data = await getAlarmTrend()
+    // updateTrendData(data)
+    stats.value.todayAlarms = await getTodayAlarmCount()
+  } catch (e) {
+    console.error('获取今日告警数量失败', e)
+  }
 })
 </script>
 

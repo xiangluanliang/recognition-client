@@ -17,3 +17,12 @@ export const updateAlarmStatus = (id: number, status: string) => {
 export const deleteAlarm = (id: number) => {
   return request.delete(`/alarm_logs/${id}/`)
 }
+
+export const getTodayAlarmCount = async (): Promise<number> =>{
+  const res = await request.get('/alarm_logs/',{params:{today:true}})
+  return res.length
+}
+
+export const getAlarmTrend = () => {
+  return request.get('/api/alarm_logs/trend')
+}
