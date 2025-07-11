@@ -16,7 +16,9 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8000",
+        // target: "http://localhost:8000", //本地后的
+        target: "http://8.152.101.217/api/test/", //测试后端
+        // target: "http://8.152.101.217/api/master/", //正式后端
         changeOrigin: true,
         // rewrite: (path) => path.replace(/^\/api/, ""),
       },
