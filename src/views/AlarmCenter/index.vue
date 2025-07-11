@@ -34,7 +34,7 @@ const handleRefresh = async () => {
   try {
     await alarmStore.fetchAlarmLogs()
     console.log(alarmStore.alarmLogs)
-    console.log(alarmStore.alarmLogs[0].event_type)
+    // console.log(alarmStore.alarmLogs[0].event_type)
   } catch {
     ElMessage.error('获取告警记录失败')
   }

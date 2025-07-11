@@ -9,7 +9,7 @@
       <div class="auth-top">
         <!-- 左：视频画面 -->
         <div class="camera-box">
-          <video ref="videoRef" :src="videoUrl" controls></video>
+          <video ref="videoRef" :src="videoUrl" controls autoplay muted></video>
         </div>
 
         <!-- 右：识别结果 -->
@@ -41,14 +41,17 @@ import { getEventDetail } from '@/api/event'
 const videoRef = ref<HTMLVideoElement | null>(null)
 const videoUrl = ref('')  // 用于绑定 video 的 src
 
-const eventId = 193 // 临时写死，后面可以传参或用路由拿
+const eventId = 203 // 临时写死，后面可以传参或用路由拿
 
 onMounted(async () => {
   try {
     const event = await getEventDetail(eventId)
     videoUrl.value = `http://8.152.101.217/${event.video_clip_path}`
+    // console.log("拿到的视频路径：", videoUrl.value)
+    // videoUrl.value = 'http://8.152.101.217/media/zxcFall.mp4'
+
     if (videoRef.value) {
-      videoRef.value.load()
+      // videoRef.value.load()
       videoRef.value.play().catch(err => {
         console.error('播放失败：', err)
       })
