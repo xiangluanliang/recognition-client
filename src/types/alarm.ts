@@ -1,9 +1,10 @@
 export interface AlarmLog {
   id: number
-  source_type: string
-  source_id: number
+  title: string
   time: string
-  method: string
-  receiver: string
-  result?: string
+  result: string
+  status: number
+  description: string
+  event_id: number
+  event_type?:string
 }

@@ -1,16 +1,7 @@
 import { defineStore } from "pinia"
 import { ref } from "vue"
 import { getAlarmList } from "@/api/alarm"
-
-export interface AlarmLog {
-  id: number
-  source_type: string
-  source_id: number
-  time: string
-  method: string
-  receiver: string
-  result?: string
-}
+import {AlarmLog} from "@/types/alarm.ts";
 
 export const useAlarmStore = defineStore("alarm", () => {
   const alarmLogs = ref<AlarmLog[]>([])
