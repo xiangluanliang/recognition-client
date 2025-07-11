@@ -50,6 +50,12 @@ const routes = [
         component: () => import("@/views/FaceAuth/index.vue"),
         meta: { title: "身份认证" },
       },
+      {
+        path: "/test",
+        name: "test",
+        component: () => import("@/views/test.vue"),
+        meta: { title: "测试网页" },
+      },
     ],
   },
 ]
