@@ -5,7 +5,7 @@ export const getEventList = (params?: any): Promise<EventLog[]> => {
   return request.get('/event_logs/', { params })
 }
 
-export const getEventDetail = (id: number) => {
+export const getEventDetail = (id: number): Promise<EventLog> => {
   return request.get(`/event_logs/${id}/`)
 }
 
