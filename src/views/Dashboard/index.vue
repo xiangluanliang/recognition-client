@@ -248,8 +248,8 @@ const updateTrendData = (trendData: number[]) => {
 
 onMounted(async () => {
   try {
-    // const data = await getAlarmTrend()
-    // updateTrendData(data)
+    const data = await getAlarmTrend()
+    updateTrendData(data)
     stats.value.todayAlarms = await getTodayAlarmCount()
   } catch (e) {
     console.error('获取今日告警数量失败', e)
