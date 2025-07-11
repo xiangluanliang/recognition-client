@@ -6,4 +6,5 @@ export interface AlarmLog {
   status: number
   description: string
   event_id: number
+  event_type?:string
 }

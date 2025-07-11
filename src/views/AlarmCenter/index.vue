@@ -13,7 +13,7 @@
 
       <el-table :data="alarmStore.alarmLogs" v-loading="alarmStore.loading" row-key="id">
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column label="事件类型" width="150" :formatter="formatEventType" />
+        <el-table-column prop="event_type" label="事件类型" width="150" />
         <el-table-column prop="event_id" label="事件ID" width="100" />
         <el-table-column prop="time" label="告警时间" width="180" />
         <el-table-column prop="result" label="处理结果" />
@@ -40,10 +40,6 @@ const handleRefresh = async () => {
   }
 }
 
-const formatEventType = (_: any, __: any, row: any) => {
-  return row?.event_type ?? '未知'
-}
-
 onMounted(() => {
   alarmStore.fetchAlarmLogs()
 })
@@ -54,9 +50,5 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.refresh-button {
-  float: right;
 }
 </style>
