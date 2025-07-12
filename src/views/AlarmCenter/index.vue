@@ -16,7 +16,7 @@
         <el-table-column prop="event_type" label="事件类型" width="150" />
         <el-table-column prop="event_id" label="事件ID" width="100" />
         <el-table-column prop="time" label="告警时间" width="180" />
-        <el-table-column prop="result" label="处理结果" />
+        <el-table-column prop="result" label="状态" />
       </el-table>
     </el-card>
   </div>
@@ -34,7 +34,7 @@ const handleRefresh = async () => {
   try {
     await alarmStore.fetchAlarmLogs()
     console.log(alarmStore.alarmLogs)
-    console.log(alarmStore.alarmLogs[0].event_type)
+    // console.log(alarmStore.alarmLogs[0].event_type)
   } catch {
     ElMessage.error('获取告警记录失败')
   }
