@@ -2,8 +2,6 @@
     <div class="video-stream-viewer">
         <select v-model="selectedStream">
             <option value="test">Stream 1</option>
-            <option value="2">Stream 2</option>
-            <option value="3">Stream 3</option>
         </select>
         <img :src="videoFeedUrl" alt="Video Stream" @error="handleImageError" />
     </div>
