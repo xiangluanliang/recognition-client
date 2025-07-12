@@ -12,7 +12,7 @@
             </div>
             <div class="stat-info">
               <h3>{{ stats.onlineUsers }}</h3>
-              <p>在线人数</p>
+              <p>注册用户</p>
             </div>
           </div>
         </el-card>
@@ -134,14 +134,16 @@ import {GridComponent, LegendComponent, TooltipComponent} from 'echarts/componen
 import VChart from 'vue-echarts'
 import {getAlarmTrend, getTodayAlarmCount} from "@/api/alarm.ts";
 import {Bell, CircleCheck, User, VideoCamera} from "@element-plus/icons-vue";
+import {getUserCount} from "@/api/users.ts";
+import {getCameraCount} from "@/api/camera.ts";
 
 use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
 // 统计数据
 const stats = ref({
-  onlineUsers: 1247,
-  todayAlarms: 23,
-  cameraCount: 48,
+  onlineUsers: 0,
+  todayAlarms: 0,
+  cameraCount: 0,
   systemStatus: '正常'
 })
 
@@ -273,11 +275,19 @@ const updateTrendData = (trendData: { dates: string[]; counts: number[] }) => {
 
 onMounted(async () => {
   try {
-    const data = await getAlarmTrend()
-    updateTrendData(data)
+    // 拿到告警趋势
+    const nums = await getAlarmTrend()
+    updateTrendData(nums)
+    // 拿到今日告警数量
     stats.value.todayAlarms = await getTodayAlarmCount()
+    // 拿到用户数量
+    const users = await getUserCount()
+    stats.value.onlineUsers = users.count
+    // 拿到摄像头数量
+    const cam = await getCameraCount()
+    stats.value.cameraCount = cam.count
   } catch (e) {
-    console.error('获取今日告警数量失败', e)
+    console.error('获取失败', e)
   }
 })
 </script>
