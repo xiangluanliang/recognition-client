@@ -1,6 +1,12 @@
 import { defineConfig } from "vite"
 import vue from "@vitejs/plugin-vue"
 import { resolve } from "path"
+import fs from 'fs'
+
+const https = {
+  key: fs.readFileSync(resolve(__dirname, 'cert/server-key.pem')),
+  cert: fs.readFileSync(resolve(__dirname, 'cert/server.pem')),
+}
 
 const base = process.env.VITE_BASE || "/"
 
@@ -13,7 +19,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 443,
+    https,
     proxy: {
       "/api": {
         // target: "http://127.0.0.1:8000", //本地后端
