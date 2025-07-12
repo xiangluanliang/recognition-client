@@ -6,7 +6,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon online">
-              <el-icon><User /></el-icon>
+              <el-icon>
+                <User/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <h3>{{ stats.onlineUsers }}</h3>
@@ -19,7 +21,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon alarm">
-              <el-icon><Bell /></el-icon>
+              <el-icon>
+                <Bell/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <h3>{{ stats.todayAlarms }}</h3>
@@ -32,7 +36,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon camera">
-              <el-icon><VideoCamera /></el-icon>
+              <el-icon>
+                <VideoCamera/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <h3>{{ stats.cameraCount }}</h3>
@@ -45,7 +51,9 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon status">
-              <el-icon><CircleCheck /></el-icon>
+              <el-icon>
+                <CircleCheck/>
+              </el-icon>
             </div>
             <div class="stat-info">
               <h3>正常</h3>
@@ -64,7 +72,7 @@
             <span>告警趋势</span>
           </template>
           <div class="chart-container">
-            <v-chart :option="alarmTrendOption" />
+            <v-chart :option="alarmTrendOption"/>
           </div>
         </el-card>
       </el-col>
@@ -74,7 +82,7 @@
             <span>区域分布</span>
           </template>
           <div class="chart-container">
-            <v-chart :option="areaDistributionOption" />
+            <v-chart :option="areaDistributionOption"/>
           </div>
         </el-card>
       </el-col>
@@ -93,7 +101,7 @@
             </div>
           </template>
           <el-table :data="recentAlarms" style="width: 100%">
-            <el-table-column prop="title" label="告警标题" />
+            <el-table-column prop="title" label="告警标题"/>
             <el-table-column prop="level" label="告警级别">
               <template #default="{ row }">
                 <el-tag :type="getAlarmLevelType(row.level)">
@@ -101,8 +109,8 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="location" label="位置" />
-            <el-table-column prop="time" label="时间" />
+            <el-table-column prop="location" label="位置"/>
+            <el-table-column prop="time" label="时间"/>
             <el-table-column prop="status" label="状态">
               <template #default="{ row }">
                 <el-tag :type="getStatusType(row.status)">
@@ -173,11 +181,11 @@ const alarmTrendOption = ref<{
   yAxis: { type: string },
   series: { data: number[], type: string, smooth: boolean, itemStyle: { color: string } }[]
 }>({
-  title: { text: '近7天告警趋势' },
-  tooltip: { trigger: 'axis' },
-  xAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] },
-  yAxis: { type: 'value' },
-  series: [{ data: [], type: 'line', smooth: true, itemStyle: { color: '#409EFF' } }]
+  title: {text: '近7天告警趋势'},
+  tooltip: {trigger: 'axis'},
+  xAxis: {type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']},
+  yAxis: {type: 'value'},
+  series: [{data: [], type: 'line', smooth: true, itemStyle: {color: '#409EFF'}}]
 })
 
 
@@ -193,11 +201,11 @@ const areaDistributionOption = ref({
     type: 'pie',
     radius: '60%',
     data: [
-      { value: 35, name: '站台区域' },
-      { value: 25, name: '候车大厅' },
-      { value: 20, name: '安检区域' },
-      { value: 15, name: '出入口' },
-      { value: 5, name: '其他区域' }
+      {value: 35, name: '站台区域'},
+      {value: 25, name: '候车大厅'},
+      {value: 20, name: '安检区域'},
+      {value: 15, name: '出入口'},
+      {value: 5, name: '其他区域'}
     ]
   }]
 })
@@ -242,8 +250,9 @@ const getStatusText = (status: string) => {
   return texts[status] || '未知'
 }
 
-const updateTrendData = (trendData: number[]) => {
-  alarmTrendOption.value.series[0].data = trendData
+const updateTrendData = (trendData) => {
+  alarmTrendOption.value.xAxis.data = trendData.dates
+  alarmTrendOption.value.series[0].data = trendData.counts
 }
 
 onMounted(async () => {
