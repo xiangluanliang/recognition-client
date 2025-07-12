@@ -4,8 +4,8 @@ import { resolve } from "path"
 import fs from 'fs'
 
 const https = {
-  key: fs.readFileSync(resolve(__dirname, 'cert/server-key.pem')),
-  cert: fs.readFileSync(resolve(__dirname, 'cert/server.pem')),
+  key: fs.readFileSync(resolve(__dirname, 'cert/localhost-key.pem')),
+  cert: fs.readFileSync(resolve(__dirname, 'cert/localhost.pem')),
 }
 
 const base = process.env.VITE_BASE || "/"
