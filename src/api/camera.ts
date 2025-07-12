@@ -5,6 +5,10 @@ export const getCameraList = (): Promise<Camera[]> => {
   return request.get("/cameras/")
 }
 
+export const getCameraCount = (): Promise<{ count: number }> => {
+  return request.get("/cameras/count/")
+}
+
 export const getCameraDetail = (id: number): Promise<Camera> => {
   return request.get(`/cameras/${id}/`)
 }

@@ -12,7 +12,7 @@
             </div>
             <div class="stat-info">
               <h3>{{ stats.onlineUsers }}</h3>
-              <p>在线人数</p>
+              <p>注册用户</p>
             </div>
           </div>
         </el-card>
@@ -66,27 +66,21 @@
 
     <!-- 图表区域 -->
     <el-row :gutter="20" class="charts-row">
-      <el-col :span="12">
-        <el-card title="告警趋势">
+      <el-col :span="24">
+        <el-card>
           <template #header>
-            <span>告警趋势</span>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>告警趋势</span>
+              <el-button type="primary" size="small" @click="generateReport">生成日报</el-button>
+            </div>
           </template>
           <div class="chart-container">
             <v-chart :option="alarmTrendOption"/>
           </div>
         </el-card>
       </el-col>
-      <el-col :span="12">
-        <el-card title="区域分布">
-          <template #header>
-            <span>区域分布</span>
-          </template>
-          <div class="chart-container">
-            <v-chart :option="areaDistributionOption"/>
-          </div>
-        </el-card>
-      </el-col>
     </el-row>
+
 
     <!-- 最新告警 -->
     <el-row class="recent-alarms">
@@ -134,14 +128,18 @@ import {GridComponent, LegendComponent, TooltipComponent} from 'echarts/componen
 import VChart from 'vue-echarts'
 import {getAlarmTrend, getTodayAlarmCount} from "@/api/alarm.ts";
 import {Bell, CircleCheck, User, VideoCamera} from "@element-plus/icons-vue";
+import {getUserCount} from "@/api/users.ts";
+import {getCameraCount} from "@/api/camera.ts";
+import {ElMessage} from "element-plus";
+import {generateDailyReport} from "@/api/report.ts";
 
 use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
 // 统计数据
 const stats = ref({
-  onlineUsers: 1247,
-  todayAlarms: 23,
-  cameraCount: 48,
+  onlineUsers: 0,
+  todayAlarms: 0,
+  cameraCount: 0,
   systemStatus: '正常'
 })
 
@@ -186,44 +184,21 @@ const alarmTrendOption = ref<{
     itemStyle: { color: string }
   }[]
 }>({
-  title: { text: '近7天告警趋势' },
-  tooltip: { trigger: 'axis' },
+  title: {text: '近7天告警趋势'},
+  tooltip: {trigger: 'axis'},
   xAxis: {
     type: 'category',
     data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
   },
-  yAxis: { type: 'value' },
+  yAxis: {type: 'value'},
   series: [
     {
       data: [],
       type: 'line',
       smooth: true,
-      itemStyle: { color: '#409EFF' }
+      itemStyle: {color: '#409EFF'}
     }
   ]
-})
-
-
-
-// 区域分布图表配置
-const areaDistributionOption = ref({
-  title: {
-    text: '告警区域分布'
-  },
-  tooltip: {
-    trigger: 'item'
-  },
-  series: [{
-    type: 'pie',
-    radius: '60%',
-    data: [
-      {value: 35, name: '站台区域'},
-      {value: 25, name: '候车大厅'},
-      {value: 20, name: '安检区域'},
-      {value: 15, name: '出入口'},
-      {value: 5, name: '其他区域'}
-    ]
-  }]
 })
 
 // 获取告警级别类型
@@ -271,13 +246,31 @@ const updateTrendData = (trendData: { dates: string[]; counts: number[] }) => {
   alarmTrendOption.value.series[0].data = trendData.counts
 }
 
+const generateReport = async () => {
+  try {
+    await generateDailyReport()
+    ElMessage.success('日报生成成功！')
+  } catch (error) {
+    ElMessage.error('生成失败，请稍后再试')
+  }
+}
+
+
 onMounted(async () => {
   try {
-    const data = await getAlarmTrend()
-    updateTrendData(data)
+    // 拿到告警趋势
+    const nums = await getAlarmTrend()
+    updateTrendData(nums)
+    // 拿到今日告警数量
     stats.value.todayAlarms = await getTodayAlarmCount()
+    // 拿到用户数量
+    const users = await getUserCount()
+    stats.value.onlineUsers = users.count
+    // 拿到摄像头数量
+    const cam = await getCameraCount()
+    stats.value.cameraCount = cam.count
   } catch (e) {
-    console.error('获取今日告警数量失败', e)
+    console.error('获取失败', e)
   }
 })
 </script>
