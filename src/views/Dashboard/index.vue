@@ -175,18 +175,34 @@ const recentAlarms = ref([
 
 // 告警趋势图表配置
 const alarmTrendOption = ref<{
-  title: { text: string },
-  tooltip: object,
-  xAxis: { type: string, data: string[] },
-  yAxis: { type: string },
-  series: { data: number[], type: string, smooth: boolean, itemStyle: { color: string } }[]
+  title: { text: string }
+  tooltip: { trigger: string }
+  xAxis: { type: string; data: string[] }
+  yAxis: { type: string }
+  series: {
+    data: number[]
+    type: string
+    smooth: boolean
+    itemStyle: { color: string }
+  }[]
 }>({
-  title: {text: '近7天告警趋势'},
-  tooltip: {trigger: 'axis'},
-  xAxis: {type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']},
-  yAxis: {type: 'value'},
-  series: [{data: [], type: 'line', smooth: true, itemStyle: {color: '#409EFF'}}]
+  title: { text: '近7天告警趋势' },
+  tooltip: { trigger: 'axis' },
+  xAxis: {
+    type: 'category',
+    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  },
+  yAxis: { type: 'value' },
+  series: [
+    {
+      data: [],
+      type: 'line',
+      smooth: true,
+      itemStyle: { color: '#409EFF' }
+    }
+  ]
 })
+
 
 
 // 区域分布图表配置
@@ -250,7 +266,7 @@ const getStatusText = (status: string) => {
   return texts[status] || '未知'
 }
 
-const updateTrendData = (trendData) => {
+const updateTrendData = (trendData: { dates: string[]; counts: number[] }) => {
   alarmTrendOption.value.xAxis.data = trendData.dates
   alarmTrendOption.value.series[0].data = trendData.counts
 }
