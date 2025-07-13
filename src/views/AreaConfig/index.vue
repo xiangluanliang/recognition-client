@@ -44,124 +44,146 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import axios from 'axios'
+import { ref, onMounted } from "vue"
+import { getFlow, fetchMyCameras } from "@/api/camera"
 
-const selectedCameraId = ref<number | null>(null);
-const cameraList = ref<{ id: number; name: string }[]>([]);
-const videoRef = ref<HTMLVideoElement | null>(null);
-const canvasRef = ref<HTMLCanvasElement | null>(null);
+const selectedCameraId = ref<number | null>(null)
+const cameraList = ref<{ id: number; name: string }[]>([])
+const videoRef = ref<HTMLVideoElement | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
 
-let isDrawing = false;
-const isDrawingMode = ref(false);
-let points: { x: number; y: number }[] = [];
+let isDrawing = false
+const isDrawingMode = ref(false)
+let points: { x: number; y: number }[] = []
 
-async function fetchCameraList() {
+// 切换摄像头时，获取其播放地址
+async function handleCameraChange(id: number) {
+  selectedCameraId.value = id
+
   try {
-    const res = await axios.get("/api/cameras/my_cameras/");
-    cameraList.value = res.data;
+    const res = await getFlow(id)
+    const { url } = res.data
+    console.log("摄像头流信息：", res.data)
+
+    if (videoRef.value) {
+      videoRef.value.srcObject = null
+      videoRef.value.src = url
+      videoRef.value.play().catch((e) => {
+        console.warn("播放失败：", e)
+      })
+    }
+
+    resizeCanvasToVideo()
   } catch (err) {
-    console.error("摄像头列表加载失败", err);
+    console.error("获取摄像头流信息失败", err)
   }
 }
 
-
-
+// 页面加载时，加载摄像头列表 & 使用本地摄像头初始化
 onMounted(() => {
+  loadCameraList()
+
   navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
     if (videoRef.value) {
-      videoRef.value.srcObject = stream;
+      videoRef.value.srcObject = stream
     }
-    resizeCanvasToVideo();
-  });
+    resizeCanvasToVideo()
+  })
 
-  window.addEventListener("resize", resizeCanvasToVideo);
-});
+  window.addEventListener("resize", resizeCanvasToVideo)
+})
+
+// 从后端获取当前用户可用的摄像头列表
+async function loadCameraList() {
+  try {
+    const data = await fetchMyCameras()
+    cameraList.value = data
+  } catch (err) {
+    console.error("摄像头列表加载失败", err)
+  }
+}
 
 // 同步 canvas 尺寸到视频
 function resizeCanvasToVideo() {
   if (videoRef.value && canvasRef.value) {
-    canvasRef.value.width = videoRef.value.clientWidth;
-    canvasRef.value.height = videoRef.value.clientHeight;
-    redrawCanvas();
+    canvasRef.value.width = videoRef.value.clientWidth
+    canvasRef.value.height = videoRef.value.clientHeight
+    redrawCanvas()
   }
 }
 
 // 开始绘图
 function startDrawingMode() {
-  isDrawingMode.value = true;
-  points = [];
-  redrawCanvas();
+  isDrawingMode.value = true
+  points = []
+  redrawCanvas()
 }
 
 // 鼠标事件
 function startDraw(e: MouseEvent) {
-  if (!isDrawingMode.value) return;
-  isDrawing = true;
-  points = []; // 清空旧的
-  addPoint(e);
+  if (!isDrawingMode.value) return
+  isDrawing = true
+  points = []
+  addPoint(e)
 }
 
 function draw(e: MouseEvent) {
-  if (!isDrawing || !isDrawingMode.value || !canvasRef.value) return;
-  addPoint(e);
-  redrawCanvas();
+  if (!isDrawing || !isDrawingMode.value || !canvasRef.value) return
+  addPoint(e)
+  redrawCanvas()
 }
 
 function endDraw() {
-  isDrawing = false;
+  isDrawing = false
 }
 
-// 添加当前点
 function addPoint(e: MouseEvent) {
-  if (!canvasRef.value) return;
-  const rect = canvasRef.value.getBoundingClientRect();
+  if (!canvasRef.value) return
+  const rect = canvasRef.value.getBoundingClientRect()
   points.push({
     x: e.clientX - rect.left,
-    y: e.clientY - rect.top,
-  });
+    y: e.clientY - rect.top
+  })
 }
 
-// 重新绘制区域
+// 重绘区域
 function redrawCanvas() {
-  if (!canvasRef.value) return;
-  const ctx = canvasRef.value.getContext("2d");
-  if (!ctx) return;
+  if (!canvasRef.value) return
+  const ctx = canvasRef.value.getContext("2d")
+  if (!ctx) return
 
-  ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height);
+  ctx.clearRect(0, 0, canvasRef.value.width, canvasRef.value.height)
 
-  if (points.length === 0) return;
+  if (points.length === 0) return
 
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
+  ctx.beginPath()
+  ctx.moveTo(points[0].x, points[0].y)
   for (let i = 1; i < points.length; i++) {
-    ctx.lineTo(points[i].x, points[i].y);
+    ctx.lineTo(points[i].x, points[i].y)
   }
 
-  // 自动闭合
-  ctx.closePath();
-  ctx.strokeStyle = "red";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // 填充透明红色区域
-  ctx.fillStyle = "rgba(255, 0, 0, 0.2)";
-  ctx.fill();
+  ctx.closePath()
+  ctx.strokeStyle = "red"
+  ctx.lineWidth = 2
+  ctx.stroke()
+  ctx.fillStyle = "rgba(255, 0, 0, 0.2)"
+  ctx.fill()
 }
 
-// 清空区域
+// 清除
 function clearCanvas() {
-  isDrawingMode.value = false;
-  points = [];
-  redrawCanvas();
+  isDrawingMode.value = false
+  points = []
+  redrawCanvas()
 }
 
-// 保存区域（可替换为 axios 发送后端）
+// 保存区域点位（可扩展成发送后端）
 function saveRegion() {
-  console.log("✅ 区域已保存，点位坐标：", points);
-  isDrawingMode.value = false;
+  console.log("✅ 区域已保存，点位坐标：", points)
+  isDrawingMode.value = false
 }
 </script>
+
 
 <style scoped>
 .area-config {

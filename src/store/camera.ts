@@ -25,3 +25,5 @@ export const useCameraStore = defineStore("camera", () => {
     fetchCameras,
   }
 })
+
+
