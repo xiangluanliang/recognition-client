@@ -5,6 +5,20 @@
         <span>危险区域配置</span>
       </template>
 
+      <!-- 摄像头选择框 -->
+      <el-form style="margin-bottom: 16px;">
+        <el-form-item label="选择摄像头">
+          <el-select v-model="selectedCameraId" placeholder="请选择摄像头" @change="handleCameraChange">
+            <el-option
+              v-for="camera in cameraList"
+              :key="camera.id"
+              :label="camera.name"
+              :value="camera.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
       <div class="config-content">
         <!-- 摄像头视频预览 -->
         <video ref="videoRef" autoplay playsinline class="video" />
@@ -31,13 +45,27 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import axios from 'axios'
 
+const selectedCameraId = ref<number | null>(null);
+const cameraList = ref<{ id: number; name: string }[]>([]);
 const videoRef = ref<HTMLVideoElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 let isDrawing = false;
 const isDrawingMode = ref(false);
 let points: { x: number; y: number }[] = [];
+
+async function fetchCameraList() {
+  try {
+    const res = await axios.get("/api/cameras/my_cameras/");
+    cameraList.value = res.data;
+  } catch (err) {
+    console.error("摄像头列表加载失败", err);
+  }
+}
+
+
 
 onMounted(() => {
   navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
