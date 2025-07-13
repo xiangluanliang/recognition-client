@@ -6,6 +6,7 @@ import { ElMessage } from 'element-plus';
 // 导入我们定义好的、会通过Nginx代理的API请求函数
 import { recognizeFrameAPI } from '@/api/faceAuth'; 
 import type { FaceRecognitionResult, FaceRecognitionResponse } from '@/types/face';
+import { da } from 'element-plus/es/locales.mjs';
 
 export const useFaceAuthStore = defineStore('faceAuth', () => {
   // --- State: 状态定义，保持不变 ---
@@ -13,15 +14,17 @@ export const useFaceAuthStore = defineStore('faceAuth', () => {
   const statusText = ref('等待开始识别...');
   const recognitionResult = ref<FaceRecognitionResult[]>([]);
   const historyLog = ref<any[]>([]);
+  const processedImage = ref<string | null>(null);
   // 使用 a let variable for the timeout handle is standard practice
   let recognitionTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // --- Getters/Helpers: 辅助函数，用于在组件中格式化显示 ---
-  const getPersonStatusText = (person: FaceRecognitionResult) => {
+  function getPersonStatusText(person:FaceRecognitionResult) {
     if (person.identity === 'Stranger') return '陌生人';
-    if (person.person_state === 1) return '危险人物';
-    return '已知人员';
-  };
+    if (person.person_state === 1) return '黑名单';
+    if (person.person_state === 0) return '正常人员';
+    return '未知状态';
+  }
 
   // --- Private Actions: 内部辅助Action ---
   const updateHistoryLog = () => {
@@ -56,45 +59,40 @@ export const useFaceAuthStore = defineStore('faceAuth', () => {
    * 截图并调用API进行识别
    * @param videoElement HTML video 元素
    */
-  const captureAndRecognize = async (videoElement: HTMLVideoElement) => {
-    // 创建一个临时的canvas用于截图
-    const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-    const context = canvas.getContext('2d');
-    if (!context) return;
+    const captureAndRecognize = async (videoElement: HTMLVideoElement) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        const context = canvas.getContext('2d');
+        if (!context) return;
 
-    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
+        context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        const imageDataUrl = canvas.toDataURL('image/jpeg');
 
-    isLoading.value = true;
-    try {
-      // 【核心调用】调用API模块，它会自动使用配置好的aiRequest实例和Nginx代理路径
-      const data: FaceRecognitionResponse = await recognizeFrameAPI(imageDataUrl);
-      
-      // 更新识别结果
-      recognitionResult.value = data.persons || [];
-      
-      if (recognitionResult.value.length === 0) {
-        statusText.value = data.message || '未检测到人脸';
-      }
-      
-      // 更新历史记录
-      updateHistoryLog();
+        isLoading.value = true;
+        try {
+            const data: FaceRecognitionResponse =  await recognizeFrameAPI(imageDataUrl);
+            recognitionResult.value = data.persons || [];
+            processedImage.value = data.processed_image || null;
+            if (data.persons && data.persons.length > 0) {
+                statusText.value = '已识别到人脸';
+                updateHistoryLog();
+            } else if (data.liveness_passed === false) {
+                statusText.value = '未通过活体检测';
+            } else {
+                statusText.value = '未检测到匹配人员';
+            }
+        } catch (error) {
+            console.error("识别请求失败 (已在拦截器中提示):", error);
+            statusText.value = '请求AI服务失败';
+            recognitionResult.value = [];
+            stopRecognition();
+        } finally {
+            isLoading.value = false;
+            scheduleNextRecognition(videoElement);
+        }
+    };
 
-    } catch (error) {
-      // 这里的错误已经被aiRequest拦截器处理并弹窗提示，这里主要负责停止循环
-      console.error("识别请求失败 (已在拦截器中提示):", error);
-      statusText.value = '请求AI服务失败';
-      recognitionResult.value = [];
-      // 发生严重错误（如500错误）时，自动停止识别，避免连续报错
-      stopRecognition();
-    } finally {
-      isLoading.value = false;
-      // 无论成功或失败，都尝试调度下一次识别（如果循环未被停止）
-      scheduleNextRecognition(videoElement);
-    }
-  };
 
   /**
    * 开始识别循环
@@ -128,6 +126,7 @@ export const useFaceAuthStore = defineStore('faceAuth', () => {
       isLoading.value = false;
       statusText.value = '识别已停止';
       recognitionResult.value = [];
+      processedImage.value = null;
       ElMessage.info('识别已停止');
     }
   };
@@ -138,6 +137,7 @@ export const useFaceAuthStore = defineStore('faceAuth', () => {
     statusText,
     recognitionResult,
     historyLog,
+    processedImage,
     startRecognition,
     stopRecognition,
     getPersonStatusText,
