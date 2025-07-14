@@ -2,24 +2,32 @@
   <div class="monitor-container">
     <div class="monitor-header">
       <div class="header-left">
-        <el-button-group>
+
+        <div class="button-group">
           <el-button :type="viewMode === 'grid' ? 'primary' : 'default'" @click="setViewMode('grid')">
-            <el-icon><Grid /></el-icon>
+            <el-icon>
+              <Grid/>
+            </el-icon>
             网格视图
           </el-button>
           <el-button :type="viewMode === 'single' ? 'primary' : 'default'" @click="setViewMode('single')">
-            <el-icon><Monitor /></el-icon>
+            <el-icon>
+              <Monitor/>
+            </el-icon>
             单屏视图
           </el-button>
-        </el-button-group>
+        </div>
       </div>
       <div class="header-right">
         <el-button type="success" @click="addCameraDialogVisible = true">
-          <el-icon><Plus /></el-icon>
+          <el-icon>
+            <Plus/>
+          </el-icon>
           添加摄像头
         </el-button>
-        <el-select v-model="selectedCameraId" @change="handleCameraSelect" placeholder="快速选择摄像头" style="width: 200px" filterable clearable>
-          <el-option v-for="camera in cameras" :key="camera.id" :label="camera.name" :value="camera.id" />
+        <el-select v-model="selectedCameraId" @change="handleCameraSelect" placeholder="快速选择摄像头"
+                   style="width: 200px" filterable clearable>
+          <el-option v-for="camera in cameras" :key="camera.id" :label="camera.name" :value="camera.id"/>
         </el-select>
       </div>
     </div>
@@ -44,11 +52,13 @@
 
       <div v-else class="single-view">
         <div class="main-video">
-          <video v-if="currentCamera" :key="currentCamera.id" :src="`${streamBaseUrl}person_detection/${currentCamera.id}`" controls autoplay muted class="main-video-player">
+          <video v-if="currentCamera" :key="currentCamera.id"
+                 :src="`${streamBaseUrl}person_detection/${currentCamera.id}`" controls autoplay muted
+                 class="main-video-player">
             您的浏览器不支持视频播放
           </video>
           <div v-else class="no-video">
-            <el-empty description="请从上方或网格视图中选择一个摄像头" />
+            <el-empty description="请从上方或网格视图中选择一个摄像头"/>
           </div>
         </div>
 
@@ -60,10 +70,10 @@
             <div class="event-list-container">
               <el-timeline v-if="eventList.length > 0">
                 <el-timeline-item
-                  v-for="event in eventList"
-                  :key="event.id"
-                  :timestamp="event.time"
-                  :type="getDetectionType(event.confidence)"
+                    v-for="event in eventList"
+                    :key="event.id"
+                    :timestamp="event.time"
+                    :type="getDetectionType(event.confidence)"
                 >
                   <strong>{{ event.event_type }}</strong>
                   <p>置信度：{{ event.confidence.toFixed(2) }}</p>
@@ -73,7 +83,7 @@
                   </div>
                 </el-timeline-item>
               </el-timeline>
-              <el-empty v-else description="暂无检测结果" />
+              <el-empty v-else description="暂无检测结果"/>
             </div>
           </el-card>
         </div>
@@ -82,10 +92,18 @@
 
     <el-dialog v-model="addCameraDialogVisible" title="添加新摄像头" width="500px" @closed="resetForm">
       <el-form :model="newCameraForm" label-width="100px" ref="cameraFormRef">
-        <el-form-item label="名称" prop="name" required><el-input v-model="newCameraForm.name" /></el-form-item>
-        <el-form-item label="物理地址" prop="location"><el-input v-model="newCameraForm.location" /></el-form-item>
-        <el-form-item label="摄像头类型" prop="camera_type"><el-input v-model="newCameraForm.camera_type" /></el-form-item>
-        <el-form-item label="推流码" prop="stream_key" required><el-input v-model="newCameraForm.stream_key" /></el-form-item>
+        <el-form-item label="名称" prop="name" required>
+          <el-input v-model="newCameraForm.name"/>
+        </el-form-item>
+        <el-form-item label="物理地址" prop="location">
+          <el-input v-model="newCameraForm.location"/>
+        </el-form-item>
+        <el-form-item label="摄像头类型" prop="camera_type">
+          <el-input v-model="newCameraForm.camera_type"/>
+        </el-form-item>
+        <el-form-item label="推流码" prop="stream_key" required>
+          <el-input v-model="newCameraForm.stream_key"/>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -109,7 +127,7 @@ import {Grid, Monitor, Plus} from "@element-plus/icons-vue";
 
 const router = useRouter();
 const cameraStore = useCameraStore();
-const { cameras, loading, fetchCameras } = cameraStore;
+const {cameras, loading, fetchCameras} = cameraStore;
 
 const streamBaseUrl = 'http://127.0.0.1:5000/stream/';
 const viewMode = ref<'grid' | 'single'>('grid');
@@ -119,7 +137,7 @@ const eventList = ref<EventLog[]>([]);
 
 const addCameraDialogVisible = ref(false);
 const isSubmitting = ref(false);
-const newCameraForm = ref({ name: '', location: '', camera_type: '', stream_key: '' });
+const newCameraForm = ref({name: '', location: '', camera_type: '', stream_key: ''});
 
 onMounted(() => {
   fetchCameras();
@@ -127,6 +145,7 @@ onMounted(() => {
 
 const handleCameraSelect = (id: number) => {
   selectedCameraId.value = id;
+  viewMode.value = 'single';
   fetchEvents(id);
 };
 
@@ -175,7 +194,7 @@ const handleAddNewCamera = async () => {
 };
 
 const resetForm = () => {
-  newCameraForm.value = { name: '', location: '', camera_type: '', stream_key: '' };
+  newCameraForm.value = {name: '', location: '', camera_type: '', stream_key: ''};
 };
 
 const getDetectionType = (confidence: number) => {
@@ -185,15 +204,14 @@ const getDetectionType = (confidence: number) => {
 };
 
 const viewDetectionDetail = (detection: EventLog) => {
-  router.push({ name: 'BehaviorDetectionRecord', query: { event_id: detection.id } });
+  router.push({name: 'BehaviorDetectionRecord', query: {event_id: detection.id}});
 };
 
 const createAlarm = (detection: EventLog) => {
   localStorage.setItem('alarm_event', JSON.stringify(detection));
-  router.push({ name: 'CreateAlarm' });
+  router.push({name: 'CreateAlarm'});
 };
 </script>
-
 
 
 <style scoped>
@@ -383,4 +401,10 @@ const createAlarm = (detection: EventLog) => {
 .detection-actions {
   margin-top: 8px;
 }
+
+.button-group {
+  display: flex;
+  gap: 8px; /* 按钮间距 */
+}
+
 </style>
