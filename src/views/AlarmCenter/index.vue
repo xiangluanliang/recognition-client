@@ -69,6 +69,14 @@
             </el-select>
           </template>
         </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" @click="goToEventDetail(row.event_id)">
+              查看详情
+            </el-button>
+          </template>
+        </el-table-column>
+
       </el-table>
     </el-card>
   </div>
@@ -81,8 +89,17 @@ import {ElMessage} from 'element-plus'
 import {Refresh, Bell, List, Clock, Check} from '@element-plus/icons-vue'
 import {useAlarmStore} from '@/store/alarm'
 import {updateAlarmStatus} from '@/api/alarm'
+import {useRouter} from 'vue-router'
 
 const alarmStore = useAlarmStore()
+const router = useRouter()
+
+const goToEventDetail = (eventId: number) => {
+  router.push({
+    name: 'BehaviorDetect',
+    query: { event_id: eventId }
+  })
+}
 
 const handleRefresh = async () => {
   try {
@@ -169,22 +186,6 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   color: #fff;
-}
-
-.stat-icon.online {
-  background-color: #409EFF;
-}
-
-.stat-icon.danger {
-  background-color: #F56C6C;
-}
-
-.stat-icon.warning {
-  background-color: #E6A23C;
-}
-
-.stat-icon.success {
-  background-color: #67C23A;
 }
 
 .stat-info h3 {

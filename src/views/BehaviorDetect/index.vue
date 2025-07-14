@@ -70,12 +70,16 @@
 <script setup lang="ts">
 import {ref, onMounted} from 'vue'
 import {getEventDetail, getEventList} from '@/api/event'
+import { useRoute } from 'vue-router'
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 const videoUrl = ref('')  // 绑定视频路径
 const eventList = ref<any[]>([]) // 事件列表数据
 const selectedEventId = ref<number | null>(null)
 const selectedEventInfo = ref<any | null>(null)
+const route = useRoute()
+const eventIdFromQuery = Number(route.query.event_id || 0)
+
 
 // 加载列表
 async function loadEventList() {
@@ -105,7 +109,9 @@ async function selectEvent(id: number) {
 // 初始化时先加载列表，然后默认选中第一条（如果有）
 onMounted(async () => {
   await loadEventList()
-  if (eventList.value.length > 0) {
+  if (eventIdFromQuery) {
+    await selectEvent(eventIdFromQuery)
+  } else if (eventList.value.length > 0) {
     await selectEvent(eventList.value[0].id)
   }
 })
