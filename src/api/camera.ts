@@ -33,22 +33,11 @@ export interface CameraCreatePayload {
 }
 
 export async function createCamera(data: CameraCreatePayload) {
-  const token = localStorage.getItem('token');
-  const headers = token ? { Authorization: `Token ${token}` } : {};
-  try {
-    const response = await axios.post('/api/cameras/', data, { headers });
-    return response.data;
-  } catch (err) {
-    console.error('添加摄像头失败', err);
-    throw err;
-  }
+  return request.post('/cameras/', data);
 }
 
 export async function getFlow(id: number) {
-  const token = localStorage.getItem('token');
-  return axios.get(`/api/cameras/${id}/flow_info/`, {
-    headers: { Authorization: `Token ${token}` }
-  });
+  return request.get(`/cameras/${id}/flow_info/`);
 }
 
 // 获取当前用户摄像头列表

@@ -101,6 +101,14 @@
         <el-form-item label="摄像头类型" prop="camera_type">
           <el-input v-model="newCameraForm.camera_type"/>
         </el-form-item>
+        <el-form-item label="推流地址">
+          <el-input
+              :value="`${streamBaseUrl}${newCameraForm.stream_key}`"
+              disabled
+              readonly
+          />
+        </el-form-item>
+
         <el-form-item label="推流码" prop="stream_key" required>
           <el-input v-model="newCameraForm.stream_key"/>
         </el-form-item>
@@ -180,7 +188,8 @@ const handleAddNewCamera = async () => {
       location: newCameraForm.value.location,
       camera_type: newCameraForm.value.camera_type,
       is_active: true,
-      password: newCameraForm.value.stream_key,
+      url: `${streamBaseUrl}${newCameraForm.value.stream_key}`,  // ✅拼接生成 url
+      password: newCameraForm.value.stream_key,  // ✅保留密码字段
     });
     ElMessage.success('摄像头添加成功！');
     addCameraDialogVisible.value = false;

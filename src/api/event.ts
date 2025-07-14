@@ -17,6 +17,6 @@ export const deleteEvent = (id: number) => {
   return request.delete(`/event_logs/${id}/`)
 }
 
-export const getDetectionEventsByCameraId = (cameraId: number): Promise<DetectionEvent[]> => {
+export const getDetectionEventsByCameraId = (cameraId: number): Promise<EventLog[]> => {
   return request.get(`/events/?camera_id=${cameraId}`)
 }
