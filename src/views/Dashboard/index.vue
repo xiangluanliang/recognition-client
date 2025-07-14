@@ -71,11 +71,11 @@
           <template #header>
             <div class="card-header">
               <span>告警趋势</span>
-              <el-button 
-                type="primary" 
-                size="small" 
-                @click="handleGenerateReport"
-                :loading="isReportLoading"
+              <el-button
+                  type="primary"
+                  size="small"
+                  @click="handleGenerateReport"
+                  :loading="isReportLoading"
               >
                 生成日报
               </el-button>
@@ -87,24 +87,24 @@
         </el-card>
       </el-col>
     </el-row>
-  <el-dialog
-    v-model="reportDialogVisible"
-    title="今日AI监控日报"
-    width="60%"
-    top="10vh"
-  >
-    <pre class="report-content">{{ currentReportContent }}</pre>
-    
-    <template #footer>
+    <el-dialog
+        v-model="reportDialogVisible"
+        title="今日AI监控日报"
+        width="60%"
+        top="10vh"
+    >
+      <pre class="report-content">{{ currentReportContent }}</pre>
+
+      <template #footer>
       <span class="dialog-footer">
         <el-button @click="reportDialogVisible = false">关闭</el-button>
         <el-button type="success" @click="handleDownloadReport">
-          <el-icon><Download /></el-icon>
+          <el-icon><Download/></el-icon>
           下载为 .txt 文件
         </el-button>
       </span>
-    </template>
-  </el-dialog>
+      </template>
+    </el-dialog>
 
 
     <!-- 最新告警 -->
@@ -119,21 +119,14 @@
               </el-button>
             </div>
           </template>
-          <el-table :data="recentAlarms" style="width: 100%">
-            <el-table-column prop="title" label="告警标题"/>
-            <el-table-column prop="level" label="告警级别">
-              <template #default="{ row }">
-                <el-tag :type="getAlarmLevelType(row.level)">
-                  {{ getAlarmLevelText(row.level) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="location" label="位置"/>
-            <el-table-column prop="time" label="时间"/>
+          <el-table :data="recentAlarms" style="width: 100%" row-key="id" border>
+            <el-table-column prop="event_type" label="事件类型"/>
+            <el-table-column prop="event_id" label="事件ID"/>
+            <el-table-column prop="time" label="告警时间"/>
             <el-table-column prop="status" label="状态">
               <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)">
-                  {{ getStatusText(row.status) }}
+                <el-tag :type="statusTagType[row.status]" effect="light">
+                  {{ statusLabel[row.status] }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -145,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {use} from 'echarts/core'
 import {CanvasRenderer} from 'echarts/renderers'
 import {LineChart, PieChart} from 'echarts/charts'
@@ -157,6 +150,7 @@ import {getUserCount} from "@/api/users.ts";
 import {getCameraCount} from "@/api/camera.ts";
 import {ElMessage} from "element-plus";
 import {generateDailyReport} from "@/api/report.ts";
+import {useAlarmStore} from "@/store/alarm.ts";
 
 use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
 
@@ -167,34 +161,6 @@ const stats = ref({
   cameraCount: 0,
   systemStatus: '正常'
 })
-
-// 最新告警数据
-const recentAlarms = ref([
-  {
-    id: 1,
-    title: '危险区域入侵告警',
-    level: 'high',
-    location: '站台A区',
-    time: '2024-01-15 14:30:25',
-    status: 'unprocessed'
-  },
-  {
-    id: 2,
-    title: '异常行为检测',
-    level: 'medium',
-    location: '候车大厅',
-    time: '2024-01-15 14:25:18',
-    status: 'processing'
-  },
-  {
-    id: 3,
-    title: '身份认证失败',
-    level: 'high',
-    location: '安检口1',
-    time: '2024-01-15 14:20:42',
-    status: 'processed'
-  }
-])
 
 // 告警趋势图表配置
 const alarmTrendOption = ref<{
@@ -226,51 +192,10 @@ const alarmTrendOption = ref<{
   ]
 })
 
-// 获取告警级别类型
-const getAlarmLevelType = (level: string) => {
-  const types: Record<string, string> = {
-    high: 'danger',
-    medium: 'warning',
-    low: 'info'
-  }
-  return types[level] || 'info'
-}
-
-// 获取告警级别文本
-const getAlarmLevelText = (level: string) => {
-  const texts: Record<string, string> = {
-    high: '高危',
-    medium: '中等',
-    low: '低危'
-  }
-  return texts[level] || '未知'
-}
-
-// 获取状态类型
-const getStatusType = (status: string) => {
-  const types: Record<string, string> = {
-    unprocessed: 'danger',
-    processing: 'warning',
-    processed: 'success'
-  }
-  return types[status] || 'info'
-}
-
-// 获取状态文本
-const getStatusText = (status: string) => {
-  const texts: Record<string, string> = {
-    unprocessed: '未处理',
-    processing: '处理中',
-    processed: '已处理'
-  }
-  return texts[status] || '未知'
-}
-
 const updateTrendData = (trendData: { dates: string[]; counts: number[] }) => {
   alarmTrendOption.value.xAxis.data = trendData.dates
   alarmTrendOption.value.series[0].data = trendData.counts
 }
-
 
 const isReportLoading = ref(false);
 const reportDialogVisible = ref(false);
@@ -308,13 +233,13 @@ const handleDownloadReport = () => {
   const filename = `AI监控日报-${dateString}.txt`;
 
   // 2. 将报告内容（字符串）转换为Blob对象
-  const blob = new Blob([currentReportContent.value], { type: 'text/plain;charset=utf-8' });
+  const blob = new Blob([currentReportContent.value], {type: 'text/plain;charset=utf-8'});
 
   // 3. 创建一个隐藏的<a>标签来触发下载
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob); // 创建一个指向Blob的URL
   link.download = filename; // 设置下载文件的名称
-  
+
   // 4. 触发点击并清理
   document.body.appendChild(link);
   link.click();
@@ -322,9 +247,23 @@ const handleDownloadReport = () => {
   URL.revokeObjectURL(link.href); // 释放URL对象
 };
 
+const alarmStore = useAlarmStore()
+const recentAlarms = computed(() => alarmStore.alarmLogs.slice(0, 3))
+// 状态映射
+const statusLabel = {
+  0: '未处理',
+  1: '处理中',
+  2: '已处理'
+}
 
+const statusTagType = {
+  0: 'danger',
+  1: 'warning',
+  2: 'success'
+}
 onMounted(async () => {
   try {
+    alarmStore.fetchAlarmLogs()
     // 拿到告警趋势
     const nums = await getAlarmTrend()
     updateTrendData(nums)
