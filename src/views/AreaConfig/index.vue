@@ -245,8 +245,8 @@ async function saveRegion() {
   }
 
   const payload = {
-    name: '未命名区域', // 你可以加个输入框来自定义名字
-    zone_type: 1,       // 先固定，后续可以搞枚举选择
+    name: '未命名区域',
+    zone_type: 1,
     zone_points: points.value,
     is_active: true,
     camera_id: selectedCameraId.value
