@@ -6,3 +6,4 @@ export interface Camera {
   camera_type: string
   is_active: boolean
 }
+

@@ -16,3 +16,7 @@ export const updateEvent = (id: number, data: Partial<EventLog>) => {
 export const deleteEvent = (id: number) => {
   return request.delete(`/event_logs/${id}/`)
 }
+
+export const getDetectionEventsByCameraId = (cameraId: number): Promise<DetectionEvent[]> => {
+  return request.get(`/events/?camera_id=${cameraId}`)
+}
