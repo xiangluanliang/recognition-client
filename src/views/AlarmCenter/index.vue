@@ -6,7 +6,7 @@
         <el-card class="stat-card">
           <div class="stat-content">
             <div :class="['stat-icon', item.iconClass]">
-              <el-icon>
+              <el-icon v-if="item.icon">
                 <component :is="item.icon"/>
               </el-icon>
             </div>
@@ -97,7 +97,7 @@ const router = useRouter()
 const goToEventDetail = (eventId: number) => {
   router.push({
     name: 'BehaviorDetect',
-    query: { event_id: eventId }
+    query: {event_id: eventId}
   })
 }
 
@@ -162,6 +162,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
+
+.stat-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.stat-icon.online {
+  background-color: #409EFF;
+}
+.stat-icon.danger {
+  background-color: #F56C6C;
+}
+.stat-icon.warning {
+  background-color: #E6A23C;
+}
+.stat-icon.success {
+  background-color: #67C23A;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
