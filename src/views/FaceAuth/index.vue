@@ -6,6 +6,7 @@
           <span>身份认证管理</span>
           <el-switch
             v-model="isRecognizing"
+            @change="handleRecognitionToggle"
             active-text="开始识别"
             inactive-text="停止识别"
           />
@@ -21,7 +22,7 @@
         <div class="info-box">
           <p class="info-title">实时识别结果</p>
           <div class="info-content" v-loading="isLoading">
-            <div v-if="recognitionResult.length">
+            <div v-if="recognitionResult.length > 0">
               <div v-for="(person, index) in recognitionResult" :key="index" class="result-item" :class="getPersonStatusClass(person)">
                 <p><strong>姓名:</strong> {{ person.identity === 'Stranger' ? '陌生人' : person.identity }}</p>
                 <p><strong>状态:</strong> {{ getPersonStatusText(person) }}</p>
@@ -51,29 +52,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useFaceAuthStore } from '@/store/faceAuth';
 import { ElMessage } from 'element-plus';
 
 const faceAuthStore = useFaceAuthStore();
+const { startRecognition, stopRecognition, stopRecognitionLoop, clearResults, getPersonStatusText } = faceAuthStore;
 const { isLoading, statusText, recognitionResult, historyLog, processedImage } = storeToRefs(faceAuthStore);
-const { startRecognition, stopRecognition, getPersonStatusText } = faceAuthStore;
 
 const videoRef = ref<HTMLVideoElement | null>(null);
 const isRecognizing = ref(false);
+const localStream = ref<MediaStream | null>(null); // 用于保存本地摄像头流的引用
 
-// 状态样式辅助函数
-const getPersonStatusClass = (person: any) => {
-  if (person.identity === 'Stranger') return 'status-stranger';
-  if (person.person_state === 1) return 'status-danger';
-  return 'status-known';
-};
+// --- 摄像头控制函数 ---
+const startLocalCamera = async () => {
+  // 确保之前的流已停止
+  if (localStream.value) {
+    localStream.value.getTracks().forEach(track => track.stop());
+  }
 
-const setupCamera = async () => {
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      localStream.value = stream;
       if (videoRef.value) {
         videoRef.value.srcObject = stream;
       }
@@ -84,29 +86,49 @@ const setupCamera = async () => {
   }
 };
 
-// 👉 监听开关变化，启动/停止识别循环
-watch(isRecognizing, (newValue) => {
+// --- 开关处理函数 ---
+const handleRecognitionToggle = (newValue: boolean) => {
   if (newValue) {
-    if (videoRef.value) {
-      // 调用 Pinia store 中的方法启动识别循环
-      startRecognition(videoRef.value);
-    }
+    startRecognition(videoRef.value);
   } else {
     stopRecognition();
+  }
+};
+
+// --- 监听识别结果，并处理摄像头的重新启动 ---
+watch(processedImage, (newImage, oldImage) => {
+  if (newImage) {
+    stopRecognitionLoop();
+    isRecognizing.value = false;
+    statusText.value = '识别成功！结果显示3秒...';
+
+    setTimeout(() => {
+      clearResults();
+    }, 3000);
+  } 
+  else if (oldImage && !newImage) {
+    nextTick(() => {
+      startLocalCamera();
+    });
   }
 });
 
 onMounted(() => {
-  setupCamera();
+  startLocalCamera();
 });
 
 onUnmounted(() => {
   stopRecognition();
-  if (videoRef.value && videoRef.value.srcObject) {
-    const stream = videoRef.value.srcObject as MediaStream;
-    stream.getTracks().forEach(track => track.stop());
+  if (localStream.value) {
+    localStream.value.getTracks().forEach(track => track.stop());
   }
 });
+
+const getPersonStatusClass = (person: any) => {
+  if (person.identity === 'Stranger') return 'status-stranger';
+  if (person.person_state === 1) return 'status-danger';
+  return 'status-known';
+};
 </script>
 
 <style scoped>

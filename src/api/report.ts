@@ -1,6 +1,6 @@
 // src/api/report.ts
-import request from '@/utils/request'
+import { aiRequest } from '@/utils/request'
 
 export const generateDailyReport = () => {
-  return request.post('/generate_daily_report/')
+  return aiRequest.post('/generate-report');
 }
