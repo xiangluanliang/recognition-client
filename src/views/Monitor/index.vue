@@ -45,7 +45,10 @@
       <div v-if="viewMode === 'grid'" class="video-grid" v-loading="loading">
         <div v-for="camera in cameras" :key="camera.id" class="video-item" @click="selectAndSwitchView(camera.id)">
           <div class="video-wrapper">
-            <video :src="`${streamBaseUrl}${selectedMode}/${camera.id}`" controls muted class="video-player">
+            <video
+                v-if="selectedMode !== 'none'"
+                :src="`${streamBaseUrl}${selectedMode}/${camera.password}/${camera.id}`"
+                controls muted class="video-player">
               您的浏览器不支持视频播放
             </video>
             <div class="video-overlay">
@@ -61,11 +64,16 @@
 
       <div v-else class="single-view">
         <div class="main-video">
-          <video v-if="currentCamera" :key="currentCamera.id"
-                 :src="`${streamBaseUrl}${selectedMode}/${currentCamera.id}`" controls autoplay muted
-                 class="main-video-player">
+          <video
+              v-if="currentCamera && selectedMode !== 'none'"
+              :key="currentCamera.id"
+              :src="videoStreamUrl"
+              controls autoplay muted
+              class="main-video-player"
+          >
             您的浏览器不支持视频播放
           </video>
+
           <div v-else class="no-video">
             <el-empty description="请从上方或网格视图中选择一个摄像头"/>
           </div>
@@ -146,7 +154,7 @@ const router = useRouter();
 const cameraStore = useCameraStore();
 const {cameras, loading, fetchCameras} = cameraStore;
 
-const streamBaseUrl = 'http://127.0.0.1:5000/';
+const streamBaseUrl = 'http://8.152.101.217/';
 const viewMode = ref<'grid' | 'single'>('grid');
 const selectedCameraId = ref<number | null>(null);
 const currentCamera = computed(() => cameras.value.find(c => c.id === selectedCameraId.value));
@@ -155,6 +163,7 @@ const eventList = ref<EventLog[]>([]);
 const addCameraDialogVisible = ref(false);
 const isSubmitting = ref(false);
 const newCameraForm = ref({name: '', location: '', camera_type: '', stream_key: ''});
+
 
 // 👇功能选择相关
 const selectedMode = ref<'none' | 'person_detection' | 'face_recognition'>('person_detection');
@@ -193,10 +202,16 @@ const selectAndSwitchView = (id: number) => {
   fetchEvents(id);
 };
 
-watch(selectedMode, () => {
-  if (selectedCameraId.value) {
-    // 触发重新加载
-    fetchEvents(selectedCameraId.value);
+const videoStreamUrl = computed(() => {
+  if (!selectedMode.value || !currentCamera.value || !selectedCameraId.value) return '';
+  return `${streamBaseUrl}${selectedMode.value}/${currentCamera.value.stream_key}/${selectedCameraId.value}`;
+});
+
+watch([selectedMode, selectedCameraId], ([mode, camId]) => {
+  if (mode && camId) {
+    fetchEvents(camId);
+  } else {
+    eventList.value = [];
   }
 });
 

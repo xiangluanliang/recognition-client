@@ -13,7 +13,7 @@ export const useCameraStore = defineStore("camera", () => {
   const eventList = ref<EventLog[]>([])
   const loading = ref(false)
   const viewMode = ref<'grid' | 'single'>('grid')
-  const streamBaseUrl = ref('http://127.0.0.1:5000/stream/')
+  const streamBaseUrl = ref('http://8.152.101.217/stream/video_feed')
 
   const fetchCameras = async () => {
     loading.value = true
