@@ -6,6 +6,7 @@
           <span>身份认证管理</span>
           <el-switch
             v-model="isRecognizing"
+            @change="handleRecognitionToggle"
             active-text="开始识别"
             inactive-text="停止识别"
           />
@@ -14,17 +15,18 @@
 
       <div class="auth-top">
         <div class="camera-box">
-          <video ref="videoRef" autoplay playsinline muted></video>
+          <img v-if="processedImage" :src="processedImage" alt="AI 处理后的视频流" class="video-stream-img" />
+          <video v-else ref="videoRef" autoplay playsinline muted></video>
         </div>
 
         <div class="info-box">
           <p class="info-title">实时识别结果</p>
           <div class="info-content" v-loading="isLoading">
-            <div v-if="recognitionResult.length">
+            <div v-if="recognitionResult.length > 0">
               <div v-for="(person, index) in recognitionResult" :key="index" class="result-item" :class="getPersonStatusClass(person)">
                 <p><strong>姓名:</strong> {{ person.identity === 'Stranger' ? '陌生人' : person.identity }}</p>
                 <p><strong>状态:</strong> {{ getPersonStatusText(person) }}</p>
-                <p><strong>相似度:</strong> {{ (1 - person.distance).toFixed(2) }}</p>
+                <p><strong>相似度:</strong> {{ person.identity === 'Stranger' ? 'N/A' : (1 - person.distance).toFixed(2) }}</p>
               </div>
             </div>
             <el-empty v-else :description="statusText" />
@@ -50,72 +52,83 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useFaceAuthStore } from '@/store/faceAuth'; // 1. 导入您的Pinia Store
+import { useFaceAuthStore } from '@/store/faceAuth';
 import { ElMessage } from 'element-plus';
 
-// --- 设置Store ---
 const faceAuthStore = useFaceAuthStore();
-// 2. 使用storeToRefs将store中的state解构为响应式引用，以便在模板中使用
-const { isLoading, statusText, recognitionResult, historyLog } = storeToRefs(faceAuthStore);
-// 3. 从store中解构出需要用到的actions和getters
-const { startRecognition, stopRecognition, getPersonStatusText } = faceAuthStore;
+const { startRecognition, stopRecognition, stopRecognitionLoop, clearResults, getPersonStatusText } = faceAuthStore;
+const { isLoading, statusText, recognitionResult, historyLog, processedImage } = storeToRefs(faceAuthStore);
 
-// --- 本地状态定义 ---
 const videoRef = ref<HTMLVideoElement | null>(null);
-// 这个isRecognizing作为UI开关的本地状态
-const isRecognizing = ref(false); 
+const isRecognizing = ref(false);
+const localStream = ref<MediaStream | null>(null); // 用于保存本地摄像头流的引用
 
-// --- 核心逻辑 ---
-// 4. 监听UI开关的变化，并调用store中定义的actions来执行真正的业务逻辑
-watch(isRecognizing, (newValue) => {
+// --- 摄像头控制函数 ---
+const startLocalCamera = async () => {
+  // 确保之前的流已停止
+  if (localStream.value) {
+    localStream.value.getTracks().forEach(track => track.stop());
+  }
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      localStream.value = stream;
+      if (videoRef.value) {
+        videoRef.value.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("无法访问摄像头:", err);
+      ElMessage.error('无法访问摄像头，请检查设备和浏览器权限！');
+    }
+  }
+};
+
+// --- 开关处理函数 ---
+const handleRecognitionToggle = (newValue: boolean) => {
   if (newValue) {
-    startRecognition(videoRef.value); // 调用action启动识别
+    startRecognition(videoRef.value);
   } else {
-    stopRecognition(); // 调用action停止识别
+    stopRecognition();
+  }
+};
+
+// --- 监听识别结果，并处理摄像头的重新启动 ---
+watch(processedImage, (newImage, oldImage) => {
+  if (newImage) {
+    stopRecognitionLoop();
+    isRecognizing.value = false;
+    statusText.value = '识别成功！结果显示3秒...';
+
+    setTimeout(() => {
+      clearResults();
+    }, 3000);
+  } 
+  else if (oldImage && !newImage) {
+    nextTick(() => {
+      startLocalCamera();
+    });
   }
 });
 
-// --- 辅助函数 ---
-// 用于根据识别结果返回不同的CSS类名以显示颜色
+onMounted(() => {
+  startLocalCamera();
+});
+
+onUnmounted(() => {
+  stopRecognition();
+  if (localStream.value) {
+    localStream.value.getTracks().forEach(track => track.stop());
+  }
+});
+
 const getPersonStatusClass = (person: any) => {
   if (person.identity === 'Stranger') return 'status-stranger';
   if (person.person_state === 1) return 'status-danger';
   return 'status-known';
 };
-
-// --- 生命周期函数 ---
-onMounted(() => {
-  // 启用摄像头的逻辑保持不变
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: false })
-      .then((stream) => {
-        if (videoRef.value) {
-          videoRef.value.srcObject = stream;
-        }
-      })
-      .catch((err) => {
-        console.error("无法访问摄像头:", err);
-        ElMessage.error('无法访问摄像头，请检查设备和浏览器权限！');
-        statusText.value = '摄像头访问失败';
-      });
-  } else {
-    ElMessage.error('您的浏览器不支持摄像头访问功能！');
-    statusText.value = '浏览器不支持';
-  }
-});
-
-onUnmounted(() => {
-  // 组件销毁时，确保调用store中的stopRecognition来清理定时器
-  stopRecognition();
-  // 并释放摄像头资源
-  if (videoRef.value && videoRef.value.srcObject) {
-    const stream = videoRef.value.srcObject as MediaStream;
-    stream.getTracks().forEach(track => track.stop());
-  }
-});
 </script>
 
 <style scoped>
@@ -179,5 +192,11 @@ video {
 .auth-bottom {
   padding-top: 16px;
   border-top: 1px solid #e4e7ed;
+}
+.video-stream-img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: #000;
 }
 </style>
