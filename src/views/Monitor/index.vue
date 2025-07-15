@@ -45,7 +45,7 @@
       <div v-if="viewMode === 'grid'" class="video-grid" v-loading="loading">
         <div v-for="camera in cameras" :key="camera.id" class="video-item" @click="selectAndSwitchView(camera.id)">
           <div class="video-wrapper">
-            <video :src="`${streamBaseUrl}person_detection/${camera.id}`" controls muted class="video-player">
+            <video :src="`${streamBaseUrl}${selectedMode}/${camera.id}`" controls muted class="video-player">
               您的浏览器不支持视频播放
             </video>
             <div class="video-overlay">
@@ -62,7 +62,7 @@
       <div v-else class="single-view">
         <div class="main-video">
           <video v-if="currentCamera" :key="currentCamera.id"
-                 :src="`${streamBaseUrl}person_detection/${currentCamera.id}`" controls autoplay muted
+                 :src="`${streamBaseUrl}${selectedMode}/${currentCamera.id}`" controls autoplay muted
                  class="main-video-player">
             您的浏览器不支持视频播放
           </video>
@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue';
+import {computed, onMounted, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {useCameraStore} from '@/store/camera';
 import {createCamera} from '@/api/camera';
@@ -146,7 +146,7 @@ const router = useRouter();
 const cameraStore = useCameraStore();
 const {cameras, loading, fetchCameras} = cameraStore;
 
-const streamBaseUrl = 'http://127.0.0.1:5000/stream/';
+const streamBaseUrl = 'http://127.0.0.1:5000/';
 const viewMode = ref<'grid' | 'single'>('grid');
 const selectedCameraId = ref<number | null>(null);
 const currentCamera = computed(() => cameras.value.find(c => c.id === selectedCameraId.value));
@@ -156,17 +156,17 @@ const addCameraDialogVisible = ref(false);
 const isSubmitting = ref(false);
 const newCameraForm = ref({name: '', location: '', camera_type: '', stream_key: ''});
 
+// 👇功能选择相关
+const selectedMode = ref<'none' | 'person_detection' | 'face_recognition'>('person_detection');
+
+const detectionModeOptions = [
+  {label: '无', value: 'none'},
+  {label: '目标检测', value: 'person_detection'},
+];
+
 onMounted(() => {
   fetchCameras();
 });
-
-const detectionModeOptions = [
-  { label: '无', value: 'none' },
-  { label: '所有功能', value: 'all' },
-  { label: '危险区域检测', value: 'danger' },
-]
-
-const selectedMode = ref('none')
 
 const handleCameraSelect = (id: number) => {
   selectedCameraId.value = id;
@@ -193,6 +193,13 @@ const selectAndSwitchView = (id: number) => {
   fetchEvents(id);
 };
 
+watch(selectedMode, () => {
+  if (selectedCameraId.value) {
+    // 触发重新加载
+    fetchEvents(selectedCameraId.value);
+  }
+});
+
 const handleAddNewCamera = async () => {
   if (!newCameraForm.value.name || !newCameraForm.value.stream_key) {
     ElMessage.warning('请填写名称和推流码');
@@ -205,8 +212,8 @@ const handleAddNewCamera = async () => {
       location: newCameraForm.value.location,
       camera_type: newCameraForm.value.camera_type,
       is_active: true,
-      url: `${streamBaseUrl}${newCameraForm.value.stream_key}`,  // ✅拼接生成 url
-      password: newCameraForm.value.stream_key,  // ✅保留密码字段
+      url: `${streamBaseUrl}stream/${newCameraForm.value.stream_key}`,
+      password: newCameraForm.value.stream_key,
     });
     ElMessage.success('摄像头添加成功！');
     addCameraDialogVisible.value = false;
@@ -238,7 +245,6 @@ const createAlarm = (detection: EventLog) => {
   router.push({name: 'CreateAlarm'});
 };
 </script>
-
 
 <style scoped>
 /* 样式部分保持不变 */
