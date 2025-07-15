@@ -120,8 +120,8 @@ const handleLogin = async () => {
       try {
         const result = await userStore.loginAction(loginForm)
         if (result.success) {
-          ElMessage.success('登录成功')
-          await router.push('/')
+          ElMessage.success('登录成功，来一个有趣的验证吧~')
+          await router.push('/verify')
         } else {
           console.log(result.message)
           ElMessage.error(result.message)

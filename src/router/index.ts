@@ -9,6 +9,14 @@ const routes = [
     component: () => import("@/views/User/Login.vue"),
     meta: { requiresAuth: false },
   },
+
+  {
+    path: '/verify',
+    name: 'Verify',
+    component: () => import('@/views/User/Verify.vue'),
+    meta: { layout: false }
+  },
+
   {
     path: "/",
     component: DefaultLayout,
