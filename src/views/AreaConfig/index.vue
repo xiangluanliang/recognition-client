@@ -244,19 +244,23 @@ async function saveRegion() {
     return
   }
 
-  const payload = {
-    name: '未命名区域',
-    zone_type: 1,
-    zone_points: points.value,
-    is_active: true,
-    camera_id: selectedCameraId.value
-  }
+const payload = {
+  name: '未命名区域',
+  zone_type: 1,
+  zone_points: points.value,
+  is_active: true,
+  camera: selectedCameraId.value,
+  safe_distance: safeDistance.value,
+  safe_time: safeTime.value,
+}
+
 
   postWarningZone(payload).then(() => {
     ElMessage.success("区域保存成功")
     isDrawingMode.value = false
   }).catch(err => {
     console.error("保存失败", err)
+    console.error("后端返回：", err.response?.data)
     ElMessage.error("保存失败")
   })
 }
