@@ -29,6 +29,15 @@
                    style="width: 200px" filterable clearable>
           <el-option v-for="camera in cameras" :key="camera.id" :label="camera.name" :value="camera.id"/>
         </el-select>
+        <el-select v-model="selectedMode" placeholder="检测模式" style="width: 200px" filterable clearable>
+          <el-option
+              v-for="item in detectionModeOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+          />
+        </el-select>
+
       </div>
     </div>
 
@@ -150,6 +159,14 @@ const newCameraForm = ref({name: '', location: '', camera_type: '', stream_key: 
 onMounted(() => {
   fetchCameras();
 });
+
+const detectionModeOptions = [
+  { label: '无', value: 'none' },
+  { label: '所有功能', value: 'all' },
+  { label: '危险区域检测', value: 'danger' },
+]
+
+const selectedMode = ref('none')
 
 const handleCameraSelect = (id: number) => {
   selectedCameraId.value = id;
