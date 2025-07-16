@@ -1,128 +1,128 @@
-// src/store/faceAuth.ts
-
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { recognizeFrameAPI } from '@/api/faceAuth';
+import { LivenessCheckService } from '@/api/faceAuth'; 
 import type { FaceRecognitionResult, FaceRecognitionResponse } from '@/types/face';
 
 export const useFaceAuthStore = defineStore('faceAuth', () => {
+  // --- State (状态) ---
   const isLoading = ref(false);
   const statusText = ref('等待开始识别...');
   const recognitionResult = ref<FaceRecognitionResult[]>([]);
   const historyLog = ref<any[]>([]);
   const processedImage = ref<string | null>(null);
-  let recognitionTimeout: ReturnType<typeof setTimeout> | null = null;
+  
+  let livenessService: LivenessCheckService | null = null;
+  let frameSenderInterval: ReturnType<typeof setInterval> | null = null;
 
-  const updateHistoryLog = () => {
-    if (recognitionResult.value.length > 0) {
+  // --- Actions (方法) ---
+  const getPersonStatusText = (person: FaceRecognitionResult) => {
+    if (person.identity === 'Stranger') return '陌生人';
+    if (person.person_state === 1) return '危险人员'; // 根据你的代码，1是危险人员
+    if (person.person_state === 0) return '正常人员';
+    return '未知状态';
+  };
+
+  const updateHistoryLog = (finalResult: FaceRecognitionResponse) => {
+    if (finalResult.persons && finalResult.persons.length > 0) {
       const timestamp = new Date().toLocaleTimeString();
-      recognitionResult.value.forEach(person => {
+      finalResult.persons.forEach(person => {
         historyLog.value.unshift({ ...person, statusText: getPersonStatusText(person), timestamp });
       });
       if (historyLog.value.length > 10) historyLog.value.pop();
     }
   };
 
-  const scheduleNextRecognition = (videoElement: HTMLVideoElement) => {
-    if (recognitionTimeout !== null) {
-      recognitionTimeout = setTimeout(() => captureAndRecognize(videoElement), 800);
+  const stopRecognition = (reason: 'success' | 'manual' | 'error' | 'closed' = 'manual') => {
+    console.log(`Stopping recognition, reason: ${reason}`); // 调试日志
+    if (frameSenderInterval) {
+      clearInterval(frameSenderInterval);
+      frameSenderInterval = null;
     }
-  };
-
-  const captureAndRecognize = async (videoElement: HTMLVideoElement) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-
-    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
-
-    isLoading.value = true;
-    try {
-      const data: FaceRecognitionResponse = await recognizeFrameAPI(imageDataUrl);
-
-      // 1. 定义什么是“有效成功”的识别
-      const isSuccess = data.liveness_passed && data.persons && data.persons.length > 0;
-
-      // 2. 无论成功与否，都更新JSON结果以在右侧面板显示
-      recognitionResult.value = data.persons || [];
-      if (isSuccess) {
-          updateHistoryLog(); // 只有成功时才更新历史记录
-      }
-
-      // 3. 根据是否成功，决定下一步行为
-      if (isSuccess) {
-        // 【成功分支】
-        // 更新处理后的图片，这将触发 index.vue 中的 watch 逻辑来停止循环
-        processedImage.value = data.processed_image || null;
-      } else {
-        // 【失败分支】
-        // a. 保持 processedImage 为 null，这样前端画面不会改变
-        processedImage.value = null;
-        // b. 更新提示文字，告诉用户正在发生什么
-        if (!data.liveness_passed) {
-            statusText.value = '未通过活体检测，正在重试...';
-        } else {
-            statusText.value = '未检测到人脸，正在重试...';
-        }
-        // c. 不做任何特殊操作，让 finally 中的 scheduleNextRecognition 继续下一次循环
-      }
-
-    } catch (error) {
-      console.error("识别请求失败:", error);
-      statusText.value = '请求AI服务失败';
-      stopRecognition();
-    } finally {
-      isLoading.value = false;
-      // 只要循环没有被外部停止，就会安排下一次识别
-      scheduleNextRecognition(videoElement);
+    if (livenessService) {
+      livenessService.stop();
+      livenessService = null;
     }
-  };
-
-  // --- Actions (保持不变) ---
-  const stopRecognitionLoop = () => {
-    if (recognitionTimeout !== null) {
-      clearTimeout(recognitionTimeout);
-      recognitionTimeout = null;
-      isLoading.value = false;
+    
+    if (reason === 'manual' && isLoading.value) {
+      statusText.value = '识别已手动停止';
+    } else if (reason === 'error') {
+      statusText.value = '服务连接失败';
+    } else if (reason === 'closed' && isLoading.value) {
+      statusText.value = '连接意外断开';
     }
+    isLoading.value = false;
   };
-
-  const clearResults = () => {
-    recognitionResult.value = [];
-    processedImage.value = null;
-    statusText.value = '识别已停止';
-  };
-
+  
   const startRecognition = (videoElement: HTMLVideoElement | null) => {
     if (!videoElement) {
       ElMessage.error("摄像头未就绪，无法开始识别。");
       return;
     }
+    if (isLoading.value) return;
+
     clearResults();
-    statusText.value = '正在识别中...';
-    if (recognitionTimeout) clearTimeout(recognitionTimeout);
-    recognitionTimeout = 0;
-    captureAndRecognize(videoElement);
+    isLoading.value = true;
+    statusText.value = '正在建立安全连接...';
+
+    const callbacks = {
+      onOpen: () => {
+        statusText.value = '连接成功，开始进行连续活体检测...';
+        frameSenderInterval = setInterval(() => {
+          if (!videoElement || !livenessService) return;
+          const canvas = document.createElement('canvas');
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+          const context = canvas.getContext('2d');
+          if (!context) return;
+          context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+          const imageDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          livenessService?.sendFrame(imageDataUrl);
+        }, 150);
+      },
+      onResult: (data: FaceRecognitionResponse & { status: string }) => {
+        console.log("Received message from backend:", data);
+        if (data.status === 'processing') {
+            statusText.value = data.message || '正在分析...';
+            recognitionResult.value = data.persons || [];
+        } else { // This is a final result
+            statusText.value = data.message || (data.liveness_passed ? "活体检测通过" : "活体检测失败");
+            recognitionResult.value = data.persons || [];
+            
+            if (data.processed_image) {
+              processedImage.value = data.processed_image;
+              if (data.liveness_passed && data.persons && data.persons.length > 0) {
+                  updateHistoryLog();
+              }
+            }
+            stopRecognition('success'); 
+        }
+      },
+      onError: (error: Event) => {
+        console.error("WebSocket connection error:", error);
+        ElMessage.error("识别服务连接失败或中断！");
+        stopRecognition('error');
+      },
+      onClose: () => {
+        console.log("WebSocket connection closed.");
+        // Only update status if it was an unexpected closure
+        if (isLoading.value) {
+            stopRecognition('closed');
+        }
+      }
+    };
+
+    livenessService = new LivenessCheckService(callbacks);
+    livenessService.start();
   };
 
-  const stopRecognition = () => {
-    stopRecognitionLoop();
-    clearResults();
-    ElMessage.info('识别已停止');
+  const clearResults = () => {
+    recognitionResult.value = [];
+    processedImage.value = null;
+    statusText.value = '等待开始识别';
   };
 
-  const getPersonStatusText = (person: FaceRecognitionResult) => {
-    if (person.identity === 'Stranger') return '陌生人';
-    if (person.person_state === 1) return '黑名单';
-    if (person.person_state === 0) return '正常人员';
-    return '未知状态';
-  }
 
-  // --- 返回 (保持不变) ---
   return {
     isLoading,
     statusText,
@@ -131,7 +131,6 @@ export const useFaceAuthStore = defineStore('faceAuth', () => {
     processedImage,
     startRecognition,
     stopRecognition,
-    stopRecognitionLoop,
     clearResults,
     getPersonStatusText,
   };

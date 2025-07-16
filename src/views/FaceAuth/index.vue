@@ -58,20 +58,18 @@ import { useFaceAuthStore } from '@/store/faceAuth';
 import { ElMessage } from 'element-plus';
 
 const faceAuthStore = useFaceAuthStore();
-const { startRecognition, stopRecognition, stopRecognitionLoop, clearResults, getPersonStatusText } = faceAuthStore;
+const { startRecognition, stopRecognition, clearResults, getPersonStatusText } = faceAuthStore;
 const { isLoading, statusText, recognitionResult, historyLog, processedImage } = storeToRefs(faceAuthStore);
 
 const videoRef = ref<HTMLVideoElement | null>(null);
-const isRecognizing = ref(false);
-const localStream = ref<MediaStream | null>(null); // 用于保存本地摄像头流的引用
+const isRecognizing = ref(false); // Local state for the switch component
+const localStream = ref<MediaStream | null>(null);
 
-// --- 摄像头控制函数 ---
+// --- 摄像头控制函数---
 const startLocalCamera = async () => {
-  // 确保之前的流已停止
   if (localStream.value) {
     localStream.value.getTracks().forEach(track => track.stop());
   }
-
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -85,8 +83,6 @@ const startLocalCamera = async () => {
     }
   }
 };
-
-// --- 开关处理函数 ---
 const handleRecognitionToggle = (newValue: boolean) => {
   if (newValue) {
     startRecognition(videoRef.value);
@@ -95,27 +91,26 @@ const handleRecognitionToggle = (newValue: boolean) => {
   }
 };
 
-// --- 监听识别结果，并处理摄像头的重新启动 ---
-watch(processedImage, (newImage, oldImage) => {
-  if (newImage) {
-    stopRecognitionLoop();
-    isRecognizing.value = false;
-    statusText.value = '识别成功！结果显示3秒...';
 
+watch(isLoading, (newIsLoading) => {
+    isRecognizing.value = newIsLoading;
+});
+
+// 监听最终图片，处理成功后的流程
+watch(processedImage, (newImage) => {
+  if (newImage) {
     setTimeout(() => {
       clearResults();
+      nextTick(() => {
+        if (videoRef.value && !localStream.value?.active) {
+            startLocalCamera();
+        }
+      });
     }, 3000);
-  } 
-  else if (oldImage && !newImage) {
-    nextTick(() => {
-      startLocalCamera();
-    });
   }
 });
 
-onMounted(() => {
-  startLocalCamera();
-});
+onMounted(startLocalCamera);
 
 onUnmounted(() => {
   stopRecognition();
