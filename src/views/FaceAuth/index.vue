@@ -26,7 +26,7 @@
               <div v-for="(person, index) in recognitionResult" :key="index" class="result-item" :class="getPersonStatusClass(person)">
                 <p><strong>姓名:</strong> {{ person.identity === 'Stranger' ? '陌生人' : person.identity }}</p>
                 <p><strong>状态:</strong> {{ getPersonStatusText(person) }}</p>
-                <p><strong>相似度:</strong> {{ person.identity === 'Stranger' ? 'N/A' : (1 - person.distance).toFixed(2) }}</p>
+                <p><strong>相似度:</strong> {{ person.identity === 'Stranger' ? 'N/A' : (person.confidence).toFixed(2) }}</p>
               </div>
             </div>
             <el-empty v-else :description="statusText" />
