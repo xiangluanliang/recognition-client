@@ -3,7 +3,7 @@ import { ElMessage } from "element-plus"
 import { useUserStore } from "@/store/user"
 
 const request = axios.create({
-  baseURL: `${import.meta.env.VITE_APP_BASE_URL}${import.meta.env.VITE_APP_DJANGO_API_PATH}`,
+  baseURL: `https://8.152.101.217/api/test/api/`,
   timeout: 10000,
 });
 
@@ -42,7 +42,7 @@ request.interceptors.response.use(
 
 export const aiRequest = axios.create({
   // baseURL现在由Nginx基地址 + AI API路径拼接而成
-  baseURL: `${import.meta.env.VITE_APP_BASE_URL}${import.meta.env.VITE_APP_AI_API_PATH}`,
+  baseURL: `https://8.152.101.217/api/test/api/`,
   timeout: 60000, 
 });
 
