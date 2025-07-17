@@ -283,7 +283,10 @@ const parseMarkdownToHtml = (markdown: string): string => {
   html = html.replace(/^[\s]*\d+\.\s+(.*$)/gm, '<li>$1</li>');
 
   // 处理链接 [text](url)
-  html = html.replace(/\[([^\]]+)\]$$([^)]+)$$/g, '<a href="$2" target="_blank">$1</a>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+  // 处理图片语法 ![alt](url)
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%;" />');
 
   // 处理换行
   html = html.replace(/\n\n/g, '</p><p>');
@@ -306,6 +309,7 @@ const parseMarkdownToHtml = (markdown: string): string => {
 
 // 格式化后的报告内容
 const formattedReportContent = computed(() => {
+  console.log(currentReportContent.value)
   return parseMarkdownToHtml(currentReportContent.value);
 });
 

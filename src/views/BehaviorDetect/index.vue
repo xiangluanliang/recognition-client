@@ -96,7 +96,8 @@ async function selectEvent(id: number) {
     selectedEventId.value = id
     const event = await getEventDetail(id)
     selectedEventInfo.value = event
-    videoUrl.value = `https://159.138.146.249/media/subject_images/${event.video_clip_path}`
+    videoUrl.value = `https://8.152.101.217/media/${event.video_clip_path}`
+    // videoUrl.value = `https://8.152.101.217/media/person_fall_clips/person_fall_pid9_frame678_20250718_030313.mp4`
 
     if (videoRef.value) {
       videoRef.value.load()
