@@ -6,4 +6,5 @@ export interface Camera {
   is_active: boolean
   url: string
   password: string
+  active_detectors: string[]
 }
