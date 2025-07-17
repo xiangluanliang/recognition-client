@@ -16,17 +16,14 @@
         <el-select v-model="selectedCameraId" @change="handleCameraSelect" placeholder="快速选择摄像头" style="width: 200px" filterable clearable>
           <el-option v-for="camera in cameras" :key="camera.id" :label="camera.name" :value="camera.id"/>
         </el-select>
-        <el-select v-model="selectedMode" placeholder="检测模式" style="width: 200px" filterable>
-          <el-option v-for="item in detectionModeOptions" :key="item.value" :label="item.label" :value="item.value"/>
-        </el-select>
       </div>
     </div>
 
     <div class="monitor-content">
       <div v-if="viewMode === 'grid'" class="video-grid" v-loading="loading">
-        <div v-for="camera in cameras" :key="camera.id" class="video-item" @click="selectAndSwitchView(camera.id)">
-          <div class="video-wrapper">
-            <img v-if="cameraStatus[camera.id] === 'online'" :src="buildStreamUrl(camera)" class="video-player"/>
+        <div v-for="camera in cameras" :key="camera.id" class="video-item">
+          <div class="video-wrapper" @click="selectAndSwitchView(camera.id)">
+            <img v-if="cameraStatus[camera.id] === 'online'" :src="buildStreamUrl(camera)" class="video-player" alt="在线视频"/>
             <div v-else-if="cameraStatus[camera.id] === 'loading'" class="status-overlay">
               <el-icon class="is-loading" size="24"><Loading /></el-icon>
               <span>加载中...</span>
@@ -35,13 +32,11 @@
               <el-icon size="24"><CircleClose /></el-icon>
               <span>视频流离线</span>
             </div>
-            <div class="video-overlay">
-              <div class="camera-info">
-                <h4>{{ camera.name }}</h4>
-                <el-tag size="small" :type="cameraStatus[camera.id] === 'online' ? 'success' : 'info'">
-                  {{ cameraStatus[camera.id] || '未知' }}
-                </el-tag>
-              </div>
+          </div>
+          <div class="video-overlay">
+            <div class="camera-info">
+              <h4>{{ camera.name }}</h4>
+              <el-button type="primary" :icon="Setting" circle size="small" @click.stop="openConfigDialog(camera)"/>
             </div>
           </div>
         </div>
@@ -50,120 +45,216 @@
 
       <div v-else class="single-view">
         <div class="main-video">
-          <img v-if="currentCamera && selectedMode !== 'none'" :key="videoStreamUrl" :src="videoStreamUrl" class="main-video-player"/>
-          <div v-else class="no-video">
+          <img v-if="currentCamera" :key="videoStreamUrl" :src="videoStreamUrl" class="main-video-player" alt="主监控画面"/>
+          <div class="no-video" v-else>
             <el-empty description="请从上方或网格视图中选择一个摄像头"/>
           </div>
         </div>
         <div class="detection-panel">
           <el-card>
-            <template #header><span>事件日志 (已暂停)</span></template>
-            <el-empty description="事件日志功能已暂停"/>
+            <template #header>
+              <div class="panel-header">
+                <span>实时事件日志</span>
+                <el-button v-if="currentCamera" type="primary" :icon="Setting" circle @click="openConfigDialog(currentCamera)"/>
+              </div>
+            </template>
+            <div class="event-list-container">
+              <el-timeline v-if="eventList && eventList.length > 0">
+                <el-timeline-item
+                    v-for="event in eventList"
+                    :key="event.id"
+                    :timestamp="new Date(event.time).toLocaleString()"
+                    type="primary"
+                >
+                  <strong>{{ event.event_type }}</strong>
+                  <p>置信度：{{ event.confidence ? event.confidence.toFixed(2) : 'N/A' }}</p>
+                </el-timeline-item>
+              </el-timeline>
+              <el-empty v-else description="暂无检测结果"/>
+            </div>
           </el-card>
         </div>
       </div>
     </div>
-    </div>
+
+    <el-dialog v-model="configDialogVisible" title="摄像头AI功能配置" width="500px" @closed="editingCamera = null">
+      <div v-if="editingCamera">
+        <p>正在为 <strong>{{ editingCamera.name }}</strong> 配置功能：</p>
+        <el-form label-position="top">
+          <el-form-item label="启用的AI检测功能">
+            <el-checkbox-group v-model="editingCamera.active_detectors">
+              <el-checkbox v-for="detector in allDetectorOptions" :key="detector.value" :label="detector.value" border>
+                {{ detector.label }}
+              </el-checkbox>
+            </el-checkbox-group>
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="configDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSaveConfig" :loading="isSubmitting">保存配置</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    
+    <el-dialog v-model="addCameraDialogVisible" title="添加新摄像头" width="500px">
+      <el-form :model="newCameraForm" label-width="100px">
+        <el-form-item label="名称" prop="name" required>
+          <el-input v-model="newCameraForm.name"/>
+        </el-form-item>
+        <el-form-item label="推流码" prop="stream_key" required>
+          <el-input v-model="newCameraForm.stream_key"/>
+        </el-form-item>
+         <el-form-item label="物理地址" prop="location">
+          <el-input v-model="newCameraForm.location"/>
+        </el-form-item>
+        <el-form-item label="摄像头类型" prop="camera_type">
+          <el-input v-model="newCameraForm.camera_type"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="addCameraDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleAddNewCamera" :loading="isSubmitting">确认添加</el-button>
+        </span>
+      </template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, toRefs } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, onBeforeUnmount, ref, watch, toRefs } from 'vue';
 import { useCameraStore } from '@/store/camera';
-import { createCamera } from '@/api/camera';
+import { createCamera as apiCreateCamera } from '@/api/camera'; // 重命名以避免冲突
 import type { Camera } from '@/types/camera';
 import { ElMessage } from 'element-plus';
-import { Grid, Monitor, Plus, Loading, CircleClose } from "@element-plus/icons-vue";
+import { Grid, Monitor, Plus, Loading, CircleClose, Setting } from "@element-plus/icons-vue";
 
-const router = useRouter();
+// --- 状态管理 ---
 const cameraStore = useCameraStore();
-// 使用 toRefs 保持响应性
-const { cameras, loading, streamBaseUrl, currentCamera } = toRefs(cameraStore);
-const { fetchCameras, setSelectedCamera } = cameraStore;
+// 使用 toRefs 从 store 中解构出状态，保持响应性
+const { cameras, loading, streamBaseUrl, currentCamera, eventList } = toRefs(cameraStore);
+// 从 store 中解构出方法
+const { fetchCameras, setSelectedCamera, fetchEvents, updateCameraConfig } = cameraStore;
 
-// ✅ 修改点 1: 默认视图改为 'single'
-const viewMode = ref<'grid' | 'single'>('single');
+// --- 本地UI状态 ---
+const viewMode = ref<'grid' | 'single'>('single'); // 默认单屏视图
 const selectedCameraId = ref<number | null>(null);
 const cameraStatus = ref<Record<number, 'loading' | 'online' | 'offline'>>({});
 
+// “添加摄像头”对话框状态
 const addCameraDialogVisible = ref(false);
 const isSubmitting = ref(false);
-const newCameraForm = ref({ name: '', location: '', camera_type: '', password: '' });
+const newCameraForm = ref({ name: '', location: '', camera_type: '', stream_key: '' });
 
-const selectedMode = ref<'none' | 'abnormal_detection'>('abnormal_detection');
-const detectionModeOptions = [
-  { label: '无', value: 'none' },
-  { label: '异常行为检测', value: 'abnormal_detection' },
+// “配置AI功能”对话框状态
+const configDialogVisible = ref(false);
+const editingCamera = ref<Camera | null>(null);
+const allDetectorOptions = [
+    { label: '摔倒检测', value: 'fall_detection' },
+    { label: '打架冲突检测', value: 'fight_detection' },
+    { label: '区域入侵检测', value: 'intrusion_detection' },
 ];
+
+// --- 定时器与生命周期 ---
+let eventPollingTimer: number | null = null;
 
 onMounted(async () => {
   await fetchCameras();
-  // 从 store 初始化 selectedCameraId
   selectedCameraId.value = cameraStore.selectedCameraId;
+  // 首次加载和后续的轮询都在 watch 中统一处理，避免重复调用
 });
 
-// ✅ 修改点 2: 统一的、正确的 URL 构建函数
+onBeforeUnmount(() => {
+    stopEventPolling(); // 组件销毁时，清理计时器，防止内存泄漏
+});
+
+// --- 核心逻辑 ---
+
+// 构建视频流URL
 const buildStreamUrl = (camera: Camera) => {
-  if (!selectedMode.value || selectedMode.value === 'none' || !camera) return '';
-  // 根据 Nginx 配置，路径必须包含 /stream/
-  return `${streamBaseUrl.value}/stream/${selectedMode.value}/${camera.password}/${camera.id}`;
+  if (!camera || !camera.stream_key) return '';
+  // 路径格式: /stream/<ai_function>/<stream_key>/<camera_id>
+  // ai_function 固定为 abnormal_detection
+  return `${streamBaseUrl.value}/stream/abnormal_detection/${camera.stream_key}/${camera.id}`;
 }
 
+// 单屏视图的URL计算属性
 const videoStreamUrl = computed(() => {
   if (!currentCamera.value) return '';
   return buildStreamUrl(currentCamera.value);
 });
 
-// ✅ 修改点 3: 异步检查摄像头在线状态的函数
+// 异步检查摄像头在线状态
 const checkStreamStatus = (camera: Camera) => {
   const url = buildStreamUrl(camera);
   if (!url) {
     cameraStatus.value[camera.id] = 'offline';
     return;
   }
-
   cameraStatus.value[camera.id] = 'loading';
   const img = new Image();
-  
   const timeout = setTimeout(() => {
     img.onload = img.onerror = null;
     if (cameraStatus.value[camera.id] === 'loading') {
        cameraStatus.value[camera.id] = 'offline';
     }
   }, 5000); // 5秒超时
-
-  img.onload = () => {
-    clearTimeout(timeout);
-    cameraStatus.value[camera.id] = 'online';
-  };
-  img.onerror = () => {
-    clearTimeout(timeout);
-    cameraStatus.value[camera.id] = 'offline';
-  };
+  img.onload = () => { clearTimeout(timeout); cameraStatus.value[camera.id] = 'online'; };
+  img.onerror = () => { clearTimeout(timeout); cameraStatus.value[camera.id] = 'offline'; };
   img.src = url;
 };
 
-// ✅ 修改点 4: 仅在切换到网格视图时，才检查所有摄像头状态
+// 启动事件轮询
+const startEventPolling = () => {
+    stopEventPolling(); // 先停止旧的，防止重复
+    if (selectedCameraId.value) {
+        eventPollingTimer = window.setInterval(() => {
+            fetchEvents();
+        }, 10000); // 每10秒轮询一次
+    }
+};
+
+// 停止事件轮询
+const stopEventPolling = () => {
+    if (eventPollingTimer) {
+        clearInterval(eventPollingTimer);
+        eventPollingTimer = null;
+    }
+};
+
+// --- 监听器 ---
+
+// 监听摄像头ID变化，以触发事件获取和轮询
+watch(selectedCameraId, (newId) => {
+    if (newId) {
+        fetchEvents();       // 立即获取一次事件
+        startEventPolling(); // 开始/重启轮询
+    } else {
+        stopEventPolling();  // 如果没有摄像头被选中，则停止轮询
+    }
+}, { immediate: true }); // immediate: true 确保组件挂载后立即执行一次
+
+// 监听视图模式变化，仅在进入网格视图时检查所有摄像头状态
 watch(viewMode, (newMode) => {
   if (newMode === 'grid' && cameras.value.length > 0) {
-    cameraStatus.value = {}; // 重置状态
+    cameraStatus.value = {};
     cameras.value.forEach(cam => checkStreamStatus(cam));
   }
 });
 
+
+// --- 事件处理函数 ---
+
+const setViewMode = (mode: 'grid' | 'single') => { viewMode.value = mode; };
+
 const handleCameraSelect = (id: number | null) => {
-  if (id === null) {
-      selectedCameraId.value = null;
-      setSelectedCamera(null);
-      return;
-  }
   selectedCameraId.value = id;
   setSelectedCamera(id);
-  setViewMode('single');
-};
-
-const setViewMode = (mode: 'grid' | 'single') => {
-  viewMode.value = mode;
+  if (id) {
+    setViewMode('single');
+  }
 };
 
 const selectAndSwitchView = (id: number) => {
@@ -172,54 +263,56 @@ const selectAndSwitchView = (id: number) => {
   setViewMode('single');
 };
 
+const openConfigDialog = (camera: Camera) => {
+    editingCamera.value = JSON.parse(JSON.stringify(camera));
+    configDialogVisible.value = true;
+};
+
+const handleSaveConfig = async () => {
+    if (!editingCamera.value) return;
+    isSubmitting.value = true;
+    const success = await updateCameraConfig(editingCamera.value.id, {
+        active_detectors: editingCamera.value.active_detectors
+    });
+    if (success) {
+        configDialogVisible.value = false;
+    }
+    isSubmitting.value = false;
+};
+
 const handleAddNewCamera = async () => {
-  if (!newCameraForm.value.name || !newCameraForm.value.password) {
+  if (!newCameraForm.value.name || !newCameraForm.value.stream_key) {
     ElMessage.warning('请填写名称和推流码');
     return;
   }
   isSubmitting.value = true;
   try {
-    // url现在写死了，如果要改就这里
-    await createCamera({
+    const success = await cameraStore.createCamera({ // 使用 store 的 action
       name: newCameraForm.value.name,
       location: newCameraForm.value.location,
       camera_type: newCameraForm.value.camera_type,
       is_active: true,
-      url: `${streamBaseUrl}stream/${newCameraForm.value.password}`,
-      password: newCameraForm.value.password,
+      // URL现在由后端或构建逻辑处理，这里可以不传或传空
+      password: newCameraForm.value.stream_key, // 对应后端的 password/stream_key
     });
-    ElMessage.success('摄像头添加成功！');
-    addCameraDialogVisible.value = false;
-    resetForm();
-    await fetchCameras();
+    if (success) {
+        ElMessage.success('摄像头添加成功！');
+        addCameraDialogVisible.value = false;
+    }
   } catch (e) {
-    ElMessage.error('添加失败，请检查表单输入');
+    // store 中已有错误提示，这里可以不再重复
   } finally {
     isSubmitting.value = false;
   }
 };
-
-const resetForm = () => {
-  newCameraForm.value = {name: '', location: '', camera_type: '', password: ''};
-};
-
-const getDetectionType = (confidence: number) => {
-  if (confidence >= 0.9) return 'danger';
-  if (confidence >= 0.6) return 'warning';
-  return 'primary';
-};
-
-const viewDetectionDetail = (detection: EventLog) => {
-  router.push({name: 'BehaviorDetectionRecord', query: {event_id: detection.id}});
-};
-
-const createAlarm = (detection: EventLog) => {
-  localStorage.setItem('alarm_event', JSON.stringify(detection));
-  router.push({name: 'CreateAlarm'});
-};
 </script>
 
 <style scoped>
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 .status-overlay {
   width: 100%;
   height: 100%;
