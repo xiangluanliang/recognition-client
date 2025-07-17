@@ -145,7 +145,7 @@ import {LineChart, PieChart} from 'echarts/charts'
 import {GridComponent, LegendComponent, TooltipComponent} from 'echarts/components'
 import VChart from 'vue-echarts'
 import {getAlarmTrend, getTodayAlarmCount} from "@/api/alarm.ts";
-import {Bell, CircleCheck, User, VideoCamera} from "@element-plus/icons-vue";
+import {Bell, CircleCheck, Download, User, VideoCamera} from "@element-plus/icons-vue";
 import {getUserCount} from "@/api/users.ts";
 import {getCameraCount} from "@/api/camera.ts";
 import {ElMessage} from "element-plus";
@@ -263,7 +263,7 @@ const statusTagType = {
 }
 onMounted(async () => {
   try {
-    alarmStore.fetchAlarmLogs()
+    await alarmStore.fetchAlarmLogs()
     // 拿到告警趋势
     const nums = await getAlarmTrend()
     updateTrendData(nums)

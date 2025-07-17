@@ -45,12 +45,11 @@
       <div v-if="viewMode === 'grid'" class="video-grid" v-loading="loading">
         <div v-for="camera in cameras" :key="camera.id" class="video-item" @click="selectAndSwitchView(camera.id)">
           <div class="video-wrapper">
-            <video
+            <img
                 v-if="selectedMode !== 'none'"
-                :src="`${streamBaseUrl}${selectedMode}/${camera.password}/${camera.id}`"
-                controls muted class="video-player">
-              您的浏览器不支持视频播放
-            </video>
+                :src="`${streamBaseUrl}ai/${selectedMode}/${camera.password}/${camera.id}`"
+                class="video-player"
+            />
             <div class="video-overlay">
               <div class="camera-info">
                 <h4>{{ camera.name }}</h4>
@@ -145,7 +144,6 @@ import {computed, onMounted, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {useCameraStore} from '@/store/camera';
 import {createCamera} from '@/api/camera';
-import {getDetectionEventsByCameraId} from '@/api/event';
 import type {EventLog} from '@/types/event';
 import {ElMessage} from 'element-plus';
 import {Grid, Monitor, Plus} from "@element-plus/icons-vue";
@@ -154,7 +152,7 @@ const router = useRouter();
 const cameraStore = useCameraStore();
 const {cameras, loading, fetchCameras} = cameraStore;
 
-const streamBaseUrl = 'http://8.152.101.217/';
+const streamBaseUrl = 'https://8.152.101.217:5000/';
 const viewMode = ref<'grid' | 'single'>('grid');
 const selectedCameraId = ref<number | null>(null);
 const currentCamera = computed(() => cameras.value.find(c => c.id === selectedCameraId.value));
@@ -180,26 +178,10 @@ onMounted(() => {
 const handleCameraSelect = (id: number) => {
   selectedCameraId.value = id;
   viewMode.value = 'single';
-  fetchEvents(id);
-};
-
-const fetchEvents = async (cameraId: number) => {
-  try {
-    eventList.value = await getDetectionEventsByCameraId(cameraId);
-  } catch (err) {
-    console.error('获取检测事件失败', err);
-    eventList.value = [];
-  }
 };
 
 const setViewMode = (mode: 'grid' | 'single') => {
   viewMode.value = mode;
-};
-
-const selectAndSwitchView = (id: number) => {
-  selectedCameraId.value = id;
-  setViewMode('single');
-  fetchEvents(id);
 };
 
 const videoStreamUrl = computed(() => {
@@ -207,9 +189,14 @@ const videoStreamUrl = computed(() => {
   return `${streamBaseUrl}${selectedMode.value}/${currentCamera.value.stream_key}/${selectedCameraId.value}`;
 });
 
+const selectAndSwitchView = (id: number) => {
+  selectedCameraId.value = id;
+  setViewMode('single');
+};
+
 watch([selectedMode, selectedCameraId], ([mode, camId]) => {
   if (mode && camId) {
-    fetchEvents(camId);
+    // fetchEvents(camId);
   } else {
     eventList.value = [];
   }
@@ -222,6 +209,7 @@ const handleAddNewCamera = async () => {
   }
   isSubmitting.value = true;
   try {
+    // url现在写死了，如果要改就这里
     await createCamera({
       name: newCameraForm.value.name,
       location: newCameraForm.value.location,
