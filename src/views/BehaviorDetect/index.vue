@@ -96,10 +96,15 @@ async function selectEvent(id: number) {
     selectedEventId.value = id
     const event = await getEventDetail(id)
     selectedEventInfo.value = event
-    videoUrl.value = `http://8.152.101.217/${event.video_clip_path}`
+    videoUrl.value = `https://159.138.146.249/media/subject_images/${event.video_clip_path}`
+
     if (videoRef.value) {
       videoRef.value.load()
-      videoRef.value.play().catch(console.error)
+
+      // 等待 canplay 再播放
+      videoRef.value.oncanplay = () => {
+        videoRef.value?.play().catch(console.error)
+      }
     }
   } catch (e) {
     console.error('加载事件详情失败', e)
