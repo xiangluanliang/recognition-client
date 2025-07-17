@@ -8,7 +8,24 @@
       <div class="auth-top">
         <!-- 左：视频画面 -->
         <div class="camera-box">
-          <video ref="videoRef" :src="videoUrl" controls autoplay muted></video>
+          <video
+            v-if="mediaType === 'video'"
+            :key="mediaUrl"
+            :src="mediaUrl"
+            controls
+            autoplay
+            muted
+          ></video>
+          <img
+            v-else-if="mediaType === 'image'"
+            :src="mediaUrl"
+            alt="事件快照"
+            class="event-image"
+          />
+          <div v-else class="media-placeholder">
+            <i class="el-icon-picture-outline"></i>
+            <p>无视频或图片</p>
+          </div>
         </div>
         <!-- 右：识别结果 -->
         <div class="info-box" v-if="selectedEventInfo">
@@ -73,7 +90,8 @@ import {getEventDetail, getEventList} from '@/api/event'
 import { useRoute } from 'vue-router'
 
 const videoRef = ref<HTMLVideoElement | null>(null)
-const videoUrl = ref('')  // 绑定视频路径
+const mediaUrl = ref('') // 存储媒体文件（视频或图片）的最终URL
+const mediaType = ref<'video' | 'image' | 'none'>('none')
 const eventList = ref<any[]>([]) // 事件列表数据
 const selectedEventId = ref<number | null>(null)
 const selectedEventInfo = ref<any | null>(null)
@@ -96,20 +114,22 @@ async function selectEvent(id: number) {
     selectedEventId.value = id
     const event = await getEventDetail(id)
     selectedEventInfo.value = event
-    const rawPath = event.video_clip_path;
-    const prefix = "/srv/http/recognition_media/";
-    const relativePath = rawPath.replace(prefix, "");
-    videoUrl.value = `https://8.152.101.217/media/${relativePath}`;
-    // videoUrl.value = `https://8.152.101.217/media/person_fall_clips/person_fall_pid9_frame678_20250718_030313.mp4`
-
-    if (videoRef.value) {
-      videoRef.value.load()
-
-      // 等待 canplay 再播放
-      videoRef.value.oncanplay = () => {
-        videoRef.value?.play().catch(console.error)
-      }
+    if (event.video_clip_path) {
+      // 如果有视频路径，则设置媒体类型为 video
+      mediaType.value = 'video';
+      const relativePath = event.video_clip_path.replace("/srv/http/recognition_media/", "");
+      mediaUrl.value = `https://8.152.101.217/media/${relativePath}`;
+    } else if (event.image_path) {
+      // 否则，如果有图片路径，则设置媒体类型为 image
+      mediaType.value = 'image';
+      const relativePath = event.image_path.replace("/srv/http/recognition_media/", "");
+      mediaUrl.value = `https://8.152.101.217/media/${relativePath}`;
+    } else {
+      // 如果两者都没有，则不显示任何媒体
+      mediaType.value = 'none';
+      mediaUrl.value = '';
     }
+
   } catch (e) {
     console.error('加载事件详情失败', e)
   }
