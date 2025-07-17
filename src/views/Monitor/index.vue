@@ -47,7 +47,7 @@
           <div class="video-wrapper">
             <img
                 v-if="selectedMode !== 'none'"
-                :src="`${streamBaseUrl}ai/${selectedMode}/${camera.password}/${camera.id}`"
+                :src="`${streamBaseUrl}stream/${selectedMode}/${camera.password}/${camera.id}`"
                 class="video-player"
             />
             <div class="video-overlay">
