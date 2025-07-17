@@ -203,9 +203,7 @@ onBeforeUnmount(() => {
 // 构建视频流URL
 const buildStreamUrl = (camera: Camera) => {
   if (!camera || !camera.password) return '';
-  // 路径格式: /stream/<ai_function>/<stream_key>/<camera_id>
-  // ai_function 固定为 abnormal_detection
-  return `${streamBaseUrl.value}/stream/abnormal_detection/${camera.password}/${camera.id}`;
+  return `${streamBaseUrl.value}/stream/cameras/${camera.id}`;
 }
 
 // 单屏视图的URL计算属性
