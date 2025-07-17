@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-box">
       <div class="login-header">
-        <h2>星链智核</h2>
+        <h2>我是姜雨彤</h2>
         <h2>交通安防协同领航平台</h2>
         <p>请先登录或注册账号</p>
       </div>
