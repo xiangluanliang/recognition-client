@@ -96,7 +96,10 @@ async function selectEvent(id: number) {
     selectedEventId.value = id
     const event = await getEventDetail(id)
     selectedEventInfo.value = event
-    videoUrl.value = `https://8.152.101.217/media/${event.video_clip_path}`
+    const rawPath = event.video_clip_path;
+    const prefix = "/srv/http/recognition_media/";
+    const relativePath = rawPath.replace(prefix, "");
+    videoUrl.value = `https://8.152.101.217/media/${relativePath}`;
     // videoUrl.value = `https://8.152.101.217/media/person_fall_clips/person_fall_pid9_frame678_20250718_030313.mp4`
 
     if (videoRef.value) {
