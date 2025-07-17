@@ -1,48 +1,31 @@
 // store/camera.ts
 import { defineStore } from "pinia"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import type { Camera } from "@/types/camera"
-import type { EventLog } from '@/types/event'
 import { getCameraList, createCamera as apiCreateCamera } from "@/api/camera"
 import { ElMessage } from "element-plus"
-import axios from "axios"
 
 export const useCameraStore = defineStore("camera", () => {
   const cameras = ref<Camera[]>([])
   const selectedCameraId = ref<number | null>(null)
-  const eventList = ref<EventLog[]>([])
   const loading = ref(false)
-  const viewMode = ref<'grid' | 'single'>('grid')
-  const streamBaseUrl = ref('http://8.152.101.217/stream/video_feed')
+  
+  const streamBaseUrl = ref('https://8.152.101.217')
 
   const fetchCameras = async () => {
     loading.value = true
     try {
       const res = await getCameraList()
       cameras.value = res
+      // 默认选中第一个摄像头，但不主动获取事件
       if (res.length > 0 && selectedCameraId.value === null) {
         selectedCameraId.value = res[0].id
-        fetchEvents()
       }
     } catch (error) {
       console.error("获取摄像头列表失败", error)
       ElMessage.error('获取摄像头失败')
     } finally {
       loading.value = false
-    }
-  }
-
-  const fetchEvents = async () => {
-    if (!selectedCameraId.value) {
-      eventList.value = []
-      return
-    }
-    try {
-      const res = await axios.get(`/api/events/?camera_id=${selectedCameraId.value}`)
-      eventList.value = res.data
-    } catch (error) {
-      console.error("事件获取失败", error)
-      ElMessage.error('获取事件失败')
     }
   }
 
@@ -59,29 +42,23 @@ export const useCameraStore = defineStore("camera", () => {
 
   const setSelectedCamera = (id: number) => {
     selectedCameraId.value = id
-    fetchEvents()
+    // 暂时不获取事件
+    // fetchEvents() 
   }
 
-  const setViewMode = (mode: 'grid' | 'single') => {
-    viewMode.value = mode
-  }
-
-  const currentCamera = () => {
+  // 使用 computed 属性来获取当前选中的摄像头对象
+  const currentCamera = computed(() => {
     return cameras.value.find(c => c.id === selectedCameraId.value)
-  }
+  })
 
   return {
     cameras,
     loading,
     selectedCameraId,
-    eventList,
-    streamBaseUrl,
-    viewMode,
+    streamBaseUrl, // <-- 暴露给组件使用
     fetchCameras,
-    fetchEvents,
     createCamera,
     setSelectedCamera,
-    setViewMode,
     currentCamera
   }
 })
