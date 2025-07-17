@@ -325,8 +325,8 @@ const handleAddNewCamera = async () => {
   try {
     const data = { // 使用 store 的 action
       name: newCameraForm.value.name,
-      location: newCameraForm.value.location,
-      camera_type: newCameraForm.value.camera_type,
+      location: newCameraForm.value.location === '' ? null : newCameraForm.value.location,
+      camera_type: newCameraForm.value.camera_type === '' ? null : newCameraForm.value.camera_type,
       is_active: true,
       // URL现在由后端或构建逻辑处理，这里可以不传或传空
       password: newCameraForm.value.stream_key, // 对应后端的 password/stream_key
