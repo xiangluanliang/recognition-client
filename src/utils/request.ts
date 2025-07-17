@@ -42,7 +42,7 @@ request.interceptors.response.use(
 
 export const aiRequest = axios.create({
   // baseURL现在由Nginx基地址 + AI API路径拼接而成
-  baseURL: `https://8.152.101.217/api/test/api/`,
+  baseURL: `https://8.152.101.217/api/ai/`,
   timeout: 60000, 
 });
 
