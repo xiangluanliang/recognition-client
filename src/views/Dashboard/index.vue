@@ -87,25 +87,71 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 改进后的日报弹窗 -->
     <el-dialog
         v-model="reportDialogVisible"
-        title="今日AI监控日报"
-        width="60%"
-        top="10vh"
+        :title="reportDialogTitle"
+        width="70%"
+        top="5vh"
+        class="report-dialog"
+        :close-on-click-modal="false"
     >
-      <pre class="report-content">{{ currentReportContent }}</pre>
+      <div class="report-container">
+        <!-- 加载状态 -->
+        <div v-if="isGeneratingReport" class="loading-container">
+          <div class="loading-spinner">
+            <el-icon class="is-loading">
+              <Loading/>
+            </el-icon>
+          </div>
+          <p class="loading-text">正在生成AI监控日报...</p>
+          <div class="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <!-- 报告内容 -->
+        <div v-else class="report-content-wrapper">
+          <div class="report-header">
+            <div class="report-title">
+              <el-icon class="title-icon"><Document/></el-icon>
+              <span>AI监控系统日报</span>
+            </div>
+            <div class="report-date">{{ getCurrentDate() }}</div>
+          </div>
+
+          <div class="report-content">{{ currentReportContent }}</div>
+
+          <div class="report-footer">
+            <div class="footer-info">
+              <el-icon><InfoFilled/></el-icon>
+              <span>本报告由AI智能分析生成</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="reportDialogVisible = false">关闭</el-button>
-        <el-button type="success" @click="handleDownloadReport">
-          <el-icon><Download/></el-icon>
-          下载为 .txt 文件
-        </el-button>
-      </span>
+        <div class="dialog-footer">
+          <el-button @click="reportDialogVisible = false" size="large">
+            <el-icon><Close/></el-icon>
+            关闭
+          </el-button>
+          <el-button
+            type="primary"
+            @click="handleDownloadReport"
+            size="large"
+            :disabled="isGeneratingReport"
+          >
+            <el-icon><Download/></el-icon>
+            下载报告
+          </el-button>
+        </div>
       </template>
     </el-dialog>
-
 
     <!-- 最新告警 -->
     <el-row class="recent-alarms">
@@ -145,7 +191,7 @@ import {LineChart, PieChart} from 'echarts/charts'
 import {GridComponent, LegendComponent, TooltipComponent} from 'echarts/components'
 import VChart from 'vue-echarts'
 import {getAlarmTrend, getTodayAlarmCount} from "@/api/alarm.ts";
-import {Bell, CircleCheck, Download, User, VideoCamera} from "@element-plus/icons-vue";
+import {Bell, CircleCheck, Download, User, VideoCamera, Loading, Document, InfoFilled, Close} from "@element-plus/icons-vue";
 import {getUserCount} from "@/api/users.ts";
 import {getCameraCount} from "@/api/camera.ts";
 import {ElMessage} from "element-plus";
@@ -197,21 +243,48 @@ const updateTrendData = (trendData: { dates: string[]; counts: number[] }) => {
   alarmTrendOption.value.series[0].data = trendData.counts
 }
 
+// 报告相关状态
 const isReportLoading = ref(false);
 const reportDialogVisible = ref(false);
 const currentReportContent = ref('');
+const isGeneratingReport = ref(false);
+
+// 计算弹窗标题
+const reportDialogTitle = computed(() => {
+  return isGeneratingReport.value ? '生成中...' : 'AI监控日报'
+});
+
+// 获取当前日期
+const getCurrentDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const day = today.getDate().toString().padStart(2, '0');
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+  const weekday = weekdays[today.getDay()];
+  return `${year}年${month}月${day}日 ${weekday}`;
+};
 
 const handleGenerateReport = async () => {
   isReportLoading.value = true;
+  reportDialogVisible.value = true;
+  isGeneratingReport.value = true;
+
   try {
     const res = await generateDailyReport();
-    // 将API成功返回的报告内容存储起来
-    currentReportContent.value = res.content;
-    // 显示弹窗
-    reportDialogVisible.value = true;
-    ElMessage.success('日报生成成功！');
+
+    // 延迟1秒显示内容，增加用户体验
+    setTimeout(() => {
+      currentReportContent.value = res.content;
+      isGeneratingReport.value = false;
+      ElMessage.success('日报生成成功！');
+    }, 1000);
+
   } catch (error) {
-    // 错误已由 request.ts 统一处理，这里只是为了调试
+    setTimeout(() => {
+      isGeneratingReport.value = false;
+      reportDialogVisible.value = false;
+    }, 1000);
     console.error("生成日报失败:", error);
   } finally {
     isReportLoading.value = false;
@@ -219,7 +292,7 @@ const handleGenerateReport = async () => {
 };
 
 /**
- * 处理“下载”按钮的点击事件
+ * 处理"下载"按钮的点击事件
  */
 const handleDownloadReport = () => {
   if (!currentReportContent.value) {
@@ -227,28 +300,27 @@ const handleDownloadReport = () => {
     return;
   }
 
-  // 1. 获取当前日期作为文件名的一部分
   const today = new Date();
   const dateString = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
   const filename = `AI监控日报-${dateString}.txt`;
 
-  // 2. 将报告内容（字符串）转换为Blob对象
   const blob = new Blob([currentReportContent.value], {type: 'text/plain;charset=utf-8'});
 
-  // 3. 创建一个隐藏的<a>标签来触发下载
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob); // 创建一个指向Blob的URL
-  link.download = filename; // 设置下载文件的名称
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
 
-  // 4. 触发点击并清理
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(link.href); // 释放URL对象
+  URL.revokeObjectURL(link.href);
+
+  ElMessage.success('报告下载成功！');
 };
 
 const alarmStore = useAlarmStore()
 const recentAlarms = computed(() => alarmStore.alarmLogs.slice(0, 3))
+
 // 状态映射
 const statusLabel = {
   0: '未处理',
@@ -261,18 +333,15 @@ const statusTagType = {
   1: 'warning',
   2: 'success'
 }
+
 onMounted(async () => {
   try {
     await alarmStore.fetchAlarmLogs()
-    // 拿到告警趋势
     const nums = await getAlarmTrend()
     updateTrendData(nums)
-    // 拿到今日告警数量
     stats.value.todayAlarms = await getTodayAlarmCount()
-    // 拿到用户数量
     const users = await getUserCount()
     stats.value.onlineUsers = users.count
-    // 拿到摄像头数量
     const cam = await getCameraCount()
     stats.value.cameraCount = cam.count
   } catch (e) {
@@ -357,5 +426,170 @@ onMounted(async () => {
 
 .recent-alarms {
   margin-bottom: 20px;
+}
+
+/* 报告弹窗样式 */
+:deep(.report-dialog) {
+  .el-dialog {
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .el-dialog__header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .el-dialog__title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .el-dialog__headerbtn .el-dialog__close {
+    color: white;
+    font-size: 18px;
+  }
+
+  .el-dialog__body {
+    padding: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .el-dialog__footer {
+    padding: 20px 24px;
+    background: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+  }
+}
+
+.report-container {
+  min-height: 400px;
+}
+
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.loading-spinner {
+  margin-bottom: 20px;
+}
+
+.loading-spinner .el-icon {
+  font-size: 48px;
+  color: #409EFF;
+}
+
+.loading-text {
+  font-size: 18px;
+  color: #606266;
+  margin: 0 0 20px 0;
+  font-weight: 500;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #409EFF;
+  animation: loading-bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes loading-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* 报告内容样式 */
+.report-content-wrapper {
+  background: white;
+}
+
+.report-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.report-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.title-icon {
+  font-size: 24px;
+}
+
+.report-date {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.report-content {
+  padding: 32px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #2c3e50;
+  background: #fafbfc;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border-left: 4px solid #409EFF;
+  margin: 0;
+  min-height: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.report-footer {
+  padding: 20px 32px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.footer-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.dialog-footer .el-button {
+  padding: 12px 24px;
+  font-size: 14px;
+  border-radius: 8px;
 }
 </style>
