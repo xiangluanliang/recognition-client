@@ -47,7 +47,7 @@
           <div class="video-wrapper">
             <img
                 v-if="selectedMode !== 'none'"
-                :src="`${streamBaseUrl}ai/${selectedMode}/${camera.password}/${camera.id}`"
+                :src="`${streamBaseUrl}stream/${selectedMode}/${camera.password}/${camera.id}`"
                 class="video-player"
             />
             <div class="video-overlay">
@@ -164,11 +164,11 @@ const newCameraForm = ref({name: '', location: '', camera_type: '', stream_key: 
 
 
 // 👇功能选择相关
-const selectedMode = ref<'none' | 'person_detection' | 'face_recognition'>('person_detection');
+const selectedMode = ref<'none' | 'abnormal_detection'>('abnormal_detection');
 
 const detectionModeOptions = [
   {label: '无', value: 'none'},
-  {label: '目标检测', value: 'person_detection'},
+  {label: '目标检测', value: 'abnormal_detection'},
 ];
 
 onMounted(() => {
