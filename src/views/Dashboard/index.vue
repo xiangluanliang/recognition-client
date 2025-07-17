@@ -123,7 +123,8 @@
             <div class="report-date">{{ getCurrentDate() }}</div>
           </div>
 
-          <div class="report-content">{{ currentReportContent }}</div>
+          <!-- 使用v-html渲染格式化后的内容 -->
+          <div class="report-content" v-html="formattedReportContent"></div>
 
           <div class="report-footer">
             <div class="footer-info">
@@ -254,6 +255,60 @@ const reportDialogTitle = computed(() => {
   return isGeneratingReport.value ? '生成中...' : 'AI监控日报'
 });
 
+// Markdown转HTML的函数
+const parseMarkdownToHtml = (markdown: string): string => {
+  if (!markdown) return '';
+
+  let html = markdown;
+
+  // 处理标题 (### ## #)
+  html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+
+  // 处理粗体 **text**
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // 处理斜体 *text*
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // 处理代码块 `code`
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // 处理无序列表
+  html = html.replace(/^[\s]*[-*+]\s+(.*$)/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+  // 处理有序列表
+  html = html.replace(/^[\s]*\d+\.\s+(.*$)/gm, '<li>$1</li>');
+
+  // 处理链接 [text](url)
+  html = html.replace(/\[([^\]]+)\]$$([^)]+)$$/g, '<a href="$2" target="_blank">$1</a>');
+
+  // 处理换行
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+
+  // 包装段落
+  if (html && !html.startsWith('<')) {
+    html = '<p>' + html + '</p>';
+  }
+
+  // 清理多余的段落标签
+  html = html.replace(/<p><\/p>/g, '');
+  html = html.replace(/<p>(<h[1-6]>)/g, '$1');
+  html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
+  html = html.replace(/<p>(<ul>)/g, '$1');
+  html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+
+  return html;
+};
+
+// 格式化后的报告内容
+const formattedReportContent = computed(() => {
+  return parseMarkdownToHtml(currentReportContent.value);
+});
+
 // 获取当前日期
 const getCurrentDate = () => {
   const today = new Date();
@@ -272,14 +327,9 @@ const handleGenerateReport = async () => {
 
   try {
     const res = await generateDailyReport();
-
-    // 延迟1秒显示内容，增加用户体验
-    setTimeout(() => {
-      currentReportContent.value = res.content;
-      isGeneratingReport.value = false;
-      ElMessage.success('日报生成成功！');
-    }, 1000);
-
+    currentReportContent.value = res.content;
+    isGeneratingReport.value = false;
+    ElMessage.success('日报生成成功！');
   } catch (error) {
     setTimeout(() => {
       isGeneratingReport.value = false;
@@ -551,20 +601,107 @@ onMounted(async () => {
   opacity: 0.9;
 }
 
+/* 改进的报告内容样式 - 支持HTML格式 */
 .report-content {
   padding: 32px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 15px;
   line-height: 1.8;
   color: #2c3e50;
   background: #fafbfc;
-  white-space: pre-wrap;
-  word-wrap: break-word;
   border-left: 4px solid #409EFF;
   margin: 0;
   min-height: 300px;
   max-height: 400px;
   overflow-y: auto;
+}
+
+/* HTML元素样式 */
+.report-content :deep(h1) {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 24px 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.report-content :deep(h2) {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 20px 0 12px 0;
+  padding-left: 12px;
+  border-left: 4px solid #4299e1;
+}
+
+.report-content :deep(h3) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4a5568;
+  margin: 16px 0 10px 0;
+  padding-left: 8px;
+  border-left: 3px solid #68d391;
+}
+
+.report-content :deep(p) {
+  margin: 12px 0;
+  text-align: justify;
+}
+
+.report-content :deep(strong) {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.report-content :deep(em) {
+  font-style: italic;
+  color: #4a5568;
+}
+
+.report-content :deep(code) {
+  background: #f7fafc;
+  color: #e53e3e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+}
+
+.report-content :deep(ul) {
+  margin: 16px 0;
+  padding-left: 0;
+}
+
+.report-content :deep(li) {
+  list-style: none;
+  margin: 8px 0;
+  padding-left: 24px;
+  position: relative;
+}
+
+.report-content :deep(li::before) {
+  content: '•';
+  color: #4299e1;
+  font-weight: bold;
+  position: absolute;
+  left: 8px;
+  font-size: 16px;
+}
+
+.report-content :deep(a) {
+  color: #4299e1;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.report-content :deep(a:hover) {
+  border-bottom-color: #4299e1;
+}
+
+.report-content :deep(br) {
+  line-height: 1.2;
 }
 
 .report-footer {
