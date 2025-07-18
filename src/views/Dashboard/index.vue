@@ -412,7 +412,11 @@ const handleDownloadReport = () => {
 };
 
 const alarmStore = useAlarmStore()
-const recentAlarms = computed(() => alarmStore.alarmLogs.slice(0, 3))
+const recentAlarms = computed(() =>
+  [...alarmStore.alarmLogs]
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    .slice(0, 3)
+)
 
 // 状态映射
 const statusLabel = {
