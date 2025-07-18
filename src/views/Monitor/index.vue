@@ -64,38 +64,40 @@
         <el-empty v-if="!loading && cameras.length === 0" description="您还没有添加摄像头"></el-empty>
       </div>
 
-      <div v-else class="single-view">
-        <div class="main-video">
-          <img v-if="currentCamera" :key="videoStreamUrl" :src="videoStreamUrl" class="main-video-player"
-               alt="主监控画面"/>
-          <div class="no-video" v-else>
-            <el-empty description="请从上方或网格视图中选择一个摄像头"/>
+      <div v-else class="single-view two-column-view">
+        <div class="left-panel">
+          <div class="main-video">
+            <img v-if="currentCamera" :key="videoStreamUrl" :src="videoStreamUrl" class="main-video-player" alt="主监控画面" />
+            <div class="no-video" v-else>
+              <el-empty description="请从上方或网格视图中选择一个摄像头" />
+            </div>
           </div>
         </div>
-        <div class="detection-panel">
-          <el-card>
-            <template #header>
-              <div class="panel-header">
-                <span>实时事件日志</span>
-                <el-button v-if="currentCamera" type="primary" :icon="Setting" circle
-                           @click="openConfigDialog(currentCamera)"/>
-              </div>
-            </template>
-            <div class="event-list-container">
-              <el-timeline v-if="eventList && eventList.length > 0">
-                <el-timeline-item
+        <div class="right-panel">
+          <div class="detection-panel">
+            <el-card>
+              <template #header>
+                <div class="panel-header">
+                  <span>实时事件日志</span>
+                  <el-button v-if="currentCamera" type="primary" :icon="Setting" circle @click="openConfigDialog(currentCamera)" />
+                </div>
+              </template>
+              <div class="event-list-container">
+                <el-timeline v-if="eventList && eventList.length > 0">
+                  <el-timeline-item
                     v-for="event in eventList"
                     :key="event.id"
                     :timestamp="new Date(event.time).toLocaleString()"
                     type="primary"
-                >
-                  <strong>{{ event.event_type }}</strong>
-                  <p>置信度：{{ event.confidence ? event.confidence.toFixed(2) : 'N/A' }}</p>
-                </el-timeline-item>
-              </el-timeline>
-              <el-empty v-else description="暂无检测结果"/>
-            </div>
-          </el-card>
+                  >
+                    <strong>{{ event.event_type }}</strong>
+                    <p>置信度：{{ event.confidence ? event.confidence.toFixed(2) : 'N/A' }}</p>
+                  </el-timeline-item>
+                </el-timeline>
+                <el-empty v-else description="暂无检测结果" />
+              </div>
+            </el-card>
+          </div>
         </div>
       </div>
     </div>
@@ -449,12 +451,35 @@ const handleAddNewCamera = async () => {
   gap: 8px;
 }
 
-.event-image {
+.two-column-view {
+  display: flex;
+  height: 100%;
+  gap: 16px;
+}
+
+.left-panel {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.main-video-player {
   max-width: 100%;
-  max-height: 360px;
+  max-height: 100%;
   object-fit: contain;
-  display: block;
-  margin: 0 auto;
+  border-radius: 8px;
+}
+
+.right-panel {
+  width: 400px;
+  flex-shrink: 0;
+  overflow-y: auto;
 }
 
 
