@@ -120,6 +120,9 @@ onUnmounted(() => {
 });
 
 const getPersonStatusClass = (person: any) => {
+    if (person.liveness_info?.oulu_result === 'SPOOF' && person.liveness_info?.combined_live_status === false) {
+    return 'status-danger';
+  }
   if (person.identity === 'Stranger') return 'status-stranger';
   if (person.person_state === 1) return 'status-danger';
   return 'status-known';

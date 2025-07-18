@@ -17,6 +17,10 @@ export const useFaceAuthStore = defineStore('faceAuth', () => {
 
   // --- Actions (方法) ---
   const getPersonStatusText = (person: FaceRecognitionResult) => {
+    const liveness = person.liveness_info;
+    if (liveness && liveness.oulu_result === 'SPOOF' && liveness.combined_live_status === false) {
+      return '识别未通过，可能为欺诈攻击';
+    }
     if (person.identity === 'Stranger') return '陌生人';
     if (person.person_state === 1) return '危险人员'; // 根据你的代码，1是危险人员
     if (person.person_state === 0) return '正常人员';

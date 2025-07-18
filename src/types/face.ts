@@ -2,6 +2,10 @@
  * 单个识别人脸的结果对象结构
  */
 export interface FaceRecognitionResult {
+    liveness_info?: {
+    oulu_result: string;
+    combined_live_status: boolean;
+  };
   /**
    * 人脸边界框坐标 [x1, y1, x2, y2]
    */
