@@ -35,8 +35,12 @@
       <div v-if="viewMode === 'grid'" class="video-grid" v-loading="loading">
         <div v-for="camera in cameras" :key="camera.id" class="video-item">
           <div class="video-wrapper" @click="selectAndSwitchView(camera.id)">
-            <img v-if="cameraStatus[camera.id] === 'online'" :src="buildStreamUrl(camera)" class="video-player"
-                 alt="在线视频"/>
+            <img
+              v-if="cameraStatus[camera.id] === 'online'"
+              :src="buildStreamUrl(camera)"
+              class="video-player event-image"
+              alt="在线视频"
+            />
             <div v-else-if="cameraStatus[camera.id] === 'loading'" class="status-overlay">
               <el-icon class="is-loading" size="24">
                 <Loading/>
@@ -444,5 +448,14 @@ const handleAddNewCamera = async () => {
   display: flex;
   gap: 8px;
 }
+
+.event-image {
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
 
 </style>
