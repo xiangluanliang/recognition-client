@@ -288,6 +288,19 @@ const parseMarkdownToHtml = (markdown: string): string => {
   // 处理图片语法 ![alt](url)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%;" />');
 
+  // 处理 Markdown 表格
+  html = html.replace(/^\|(.+)\|\n\|[-| ]+\|\n((?:\|.*\|\n?)*)/gm, (_, headerRow, bodyRows) => {
+    const headers = headerRow.trim().split('|').map(h => `<th>${h.trim()}</th>`).join('');
+    const rows = bodyRows.trim().split('\n').map(row => {
+      const cleanRow = row.trim().replace(/^(\|)?(.*?)(\|)?$/, '$2'); // 去掉开头和结尾的 |
+      const cells = cleanRow.split('|').map(c => `<td>${c.trim()}</td>`).join('');
+
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table class="markdown-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+  });
+
+
   // 处理换行
   html = html.replace(/\n\n/g, '</p><p>');
   html = html.replace(/\n/g, '<br>');
@@ -309,9 +322,35 @@ const parseMarkdownToHtml = (markdown: string): string => {
 
 // 格式化后的报告内容
 const formattedReportContent = computed(() => {
-  console.log(currentReportContent.value)
-  return parseMarkdownToHtml(currentReportContent.value);
+  const raw = currentReportContent.value;
+
+  // 尝试匹配表格 HTML（支持多个表格）
+  const tableMatches = raw.match(/<table[\s\S]*?<\/table>/gi);
+
+  let markdownPart = raw;
+  let htmlPart = '';
+
+  if (tableMatches && tableMatches.length > 0) {
+    // 移除 HTML 表格内容，仅保留 Markdown 部分
+    tableMatches.forEach(table => {
+      markdownPart = markdownPart.replace(table, '[[TABLE_PLACEHOLDER]]');
+    });
+
+    // 转 Markdown → HTML
+    let html = parseMarkdownToHtml(markdownPart);
+
+    // 插入表格回去
+    tableMatches.forEach(table => {
+      html = html.replace('[[TABLE_PLACEHOLDER]]', table);
+    });
+
+    return html;
+  }
+
+  // 无 HTML 表格时，正常解析
+  return parseMarkdownToHtml(raw);
 });
+
 
 // 获取当前日期
 const getCurrentDate = () => {
@@ -706,6 +745,63 @@ onMounted(async () => {
 
 .report-content :deep(br) {
   line-height: 1.2;
+}
+
+.report-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px auto;
+  background-color: #ffffff;
+  /* 移除表格整体的阴影和圆角，以匹配图片中更简洁的样式 */
+  box-shadow: none;
+  border-radius: 0;
+  border: none; /* 移除表格整体边框 */
+}
+
+.report-content :deep(th),
+.report-content :deep(td) {
+  border: none; /* 移除所有单元格边框 */
+  padding: 12px 15px;
+  text-align: left; /* 默认左对齐 */
+  font-size: 14px;
+  color: #333;
+}
+
+.report-content :deep(th) {
+  background-color: transparent; /* 表头背景透明 */
+  font-weight: 700; /* 表头字体加粗 */
+  color: #303133; /* 表头字体颜色更深 */
+  text-align: left; /* 表头左对齐，与图片一致 */
+  border-bottom: 2px solid #e0e0e0; /* 表头下方粗线 */
+}
+
+.report-content :deep(td) {
+  border-bottom: 1px solid #e0e0e0; /* 数据行下方细线 */
+}
+
+/* 移除表格最后一行的底部边框 */
+.report-content :deep(tr:last-child td) {
+  border-bottom: none;
+}
+
+/* 移除偶数行的背景色，以匹配图片中统一的背景 */
+.report-content :deep(tr:nth-child(even)) {
+  background-color: transparent;
+}
+
+.report-content :deep(tr:hover) {
+  background-color: #f0f8ff; /* 保留悬停效果 */
+}
+
+/* 针对表格列的对齐调整 */
+.report-content :deep(th:first-child),
+.report-content :deep(td:first-child) {
+  text-align: left; /* 第一列左对齐 */
+}
+
+.report-content :deep(th:not(:first-child)),
+.report-content :deep(td:not(:first-child)) {
+  text-align: center; /* 其他列居中对齐 */
 }
 
 .report-footer {
