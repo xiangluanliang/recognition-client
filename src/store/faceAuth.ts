@@ -96,7 +96,7 @@ export const useFaceAuthStore = defineStore('faceAuth', () => {
             if (data.processed_image) {
               processedImage.value = data.processed_image;
               if (data.liveness_passed && data.persons && data.persons.length > 0) {
-                  updateHistoryLog();
+                  updateHistoryLog(data);
               }
             }
             stopRecognition('success'); 
